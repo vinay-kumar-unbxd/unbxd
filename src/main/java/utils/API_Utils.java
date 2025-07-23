@@ -114,6 +114,17 @@ public class API_Utils {
         return imageUrls;
     }
 
+    public static Response getSearchResultResponse(String apiUrl) {
+        Response response = RestAssured.get(apiUrl);
+        response.then().statusCode(200); // Assert 200 OK
+        return response;
+    }
+    public static int getTotalProductCount(Response response) {
+        return response.jsonPath().getInt("response.numberOfProducts");
+    }
+
+
+
 
 }
 

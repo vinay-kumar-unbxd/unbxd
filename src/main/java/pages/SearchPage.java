@@ -5,6 +5,8 @@ import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SearchPage{
     WebDriver driver;
@@ -36,14 +38,20 @@ public class SearchPage{
     })
     private WebElement closeIcon;
 
-
-
-
-
-
     public void enterInSearchBox(String data)
     {   searchBox.click();
         searchBox.sendKeys(data); }
+
+    @FindAll({
+            @FindBy(xpath = "//span[contains(@id,'ProductCount')]"),
+            @FindBy(xpath = "//div[contains(text(),'products')]"),
+            @FindBy(xpath = "//span[contains(text(),'items')]"),
+            @FindBy(xpath = "//*[contains(text(),'Showing')]"),
+            @FindBy(css = ".product-count")
+    })
+    private List<WebElement> productCountElements;
+
+
 
 
     public void closePopupIfPresent() {
@@ -56,6 +64,25 @@ public class SearchPage{
                 System.out.println("⚠️ Failed to click popup close button: " + e.getMessage());
             }
         }
+
+    public int getProductCountFromUI() {
+        for (WebElement element : productCountElements) {
+            try {
+                String text = element.getText(); // Example: "Showing 1-20 of 1743 products"
+                if (text != null && !text.trim().isEmpty()) {
+                    Matcher matcher = Pattern.compile("\\d{1,6}").matcher(text);
+                    int lastNumber = -1;
+                    while (matcher.find()) {
+                        lastNumber = Integer.parseInt(matcher.group());
+                    }
+                    if (lastNumber != -1) return lastNumber;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        throw new RuntimeException("❌ Could not extract product count from any matching UI element.");
+    }
+
 
 
 

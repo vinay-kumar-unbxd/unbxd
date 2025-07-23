@@ -9,13 +9,10 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 import java.util.List;
 
-
-
 public class BasePage {
 
     protected WebDriver driver;
     protected WebDriverWait wait;
-
     public SearchPage searchPage;
 
     public BasePage(WebDriver driver) {
@@ -23,30 +20,6 @@ public class BasePage {
         PageFactory.initElements(driver, this);  // Initializes @FindBy fields
         searchPage = new SearchPage(driver);
     }
-
-    /**
-     * Generic method to verify presence of expected titles in UI (case-insensitive, normalized).
-     *
-     * @param titles List of expected product or suggestion titles to validate in the DOM
-     */
-//    public void verifyTitlesPresentInUI(List<String> titles) {
-//        for (String expectedTitle : titles) {
-//            String normalizedTitle = expectedTitle.toLowerCase();
-//
-//            String xpath = String.format(
-//                    "//*[contains(translate(normalize-space(text()), " +
-//                            "'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), \"%s\")]",
-//                    normalizedTitle
-//            );
-//            List<WebElement> elements = driver.findElements(By.xpath(xpath));
-//
-//            if (!elements.isEmpty()) {
-//                System.out.println("✅ Title found in UI: " + expectedTitle);
-//            } else {
-//                System.out.println("❌ Title NOT found in UI: " + expectedTitle);
-//            }
-//        }
-//    }
 
     public void verifyTitlesPresentInUI(List<String> titles) {
         for (String expectedTitle : titles) {
@@ -71,9 +44,6 @@ public class BasePage {
         }
     }
 
-
-
-
     /**
      * Generic method to verify presence of expected imageurl in UI
      */
@@ -92,6 +62,7 @@ public class BasePage {
     }
 
     @FindAll({
+            @FindBy(xpath = ""),
             @FindBy(xpath = "//button[contains(@class,'close')]"),
             @FindBy(xpath = "//div[contains(@class,'popup')]//button[contains(@class,'close')]"),
             @FindBy(xpath = "(//button[@data-role='closeBtn'])[1]"),

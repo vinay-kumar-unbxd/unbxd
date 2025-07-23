@@ -15,4 +15,23 @@ public class DataUtils {
                 .map(Object::toString)
                 .collect(Collectors.toList());
     }
+
+    public String key;
+    public String siteUrl;
+    public String baseUrl;
+    public String query;
+    public String search;
+    public String endPointSRP;
+    public String searchUrl;
+
+    public String getApiUrl() {
+        return baseUrl + search + query + endPointSRP;
+    }
+
+
+    public String getSiteSearchUrl() {
+        return siteUrl + searchUrl + query;
+    }
+
+
 }

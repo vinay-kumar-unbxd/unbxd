@@ -1,8 +1,11 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
 <suite name="Popular Product Validation Suite" parallel="methods" thread-count="3">
     <test name="Popular Suggestion Validation">
+        <parameter name="testKey" value="mwave"/>
         <classes>
             <class name="Autosuggestion.PopularSuggestion"/>
+            <class name="Autosuggestion.KeywordSuggestion"/>
+            <class name="Autosuggestion.TopSearchQueries"/>
         </classes>
     </test>
 </suite>
