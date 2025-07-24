@@ -1,144 +1,249 @@
 package pages;
+
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.FindAll;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.ArrayList;
 
 public class BasePage {
 
+    // Constants for better maintainability
+    private static final int DEFAULT_WAIT_TIMEOUT = 10;
+    private static final int POPUP_SLEEP_DURATION = 1000;
+    
     protected WebDriver driver;
     protected WebDriverWait wait;
     public SearchPage searchPage;
 
     public BasePage(WebDriver driver) {
         this.driver = driver;
-        PageFactory.initElements(driver, this);  // Initializes @FindBy fields
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(DEFAULT_WAIT_TIMEOUT));
+        PageFactory.initElements(driver, this);
         searchPage = new SearchPage(driver);
     }
 
+
     public void verifyTitlesPresentInUI(List<String> titles) {
         for (String expectedTitle : titles) {
-            String normalizedTitle = expectedTitle
-                    .replaceAll("[^\\p{ASCII}]", "") // remove fancy symbols
-                    .replaceAll("\\s+", " ")         // normalize whitespace
-                    .trim()
-                    .toLowerCase();
-
+            if (expectedTitle == null || expectedTitle.trim().isEmpty()) {
+                continue; // Skip null or empty titles
+            }
+            
+            String normalizedTitle = normalizeText(expectedTitle);
             String xpath = String.format(
                     "//*[contains(translate(normalize-space(.), " +
                             "'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), \"%s\")]",
                     normalizedTitle
             );
-
+            
             List<WebElement> elements = driver.findElements(By.xpath(xpath));
-            if (!elements.isEmpty()) {
-                System.out.println("✅ Title found in UI: " + expectedTitle);
+            if (elements.isEmpty()) {
+                throw new RuntimeException("Title not found in UI: " + expectedTitle);
             } else {
-                System.out.println("❌ Title NOT found in UI: " + expectedTitle);
+                System.out.println("Title found in UI: " + expectedTitle);
             }
         }
     }
 
-    /**
-     * Generic method to verify presence of expected imageurl in UI
-     */
+
     public void validateImagesPresentInUI(List<String> expectedImageUrls) {
         for (String imageUrl : expectedImageUrls) {
+            if (imageUrl == null || imageUrl.trim().isEmpty()) {
+                continue; // Skip null or empty URLs
+            }
+            
             String xpath = String.format("//img[contains(@src, \"%s\")]", imageUrl);
-
             List<WebElement> imageElements = driver.findElements(By.xpath(xpath));
-
-            if (!imageElements.isEmpty()) {
-                System.out.println("✅ Image found in UI: " + imageUrl);
+            
+            if (imageElements.isEmpty()) {
+                throw new RuntimeException("Image not found in UI: " + imageUrl);
             } else {
-                System.out.println("❌ Image NOT found in UI: " + imageUrl);
+                System.out.println("Image found in UI: " + imageUrl);
             }
         }
+    }
+
+
+    public boolean verifyProductTitle(String productTitle, String productLabel) {
+        if (productTitle == null || productTitle.trim().isEmpty()) {
+            System.out.println("Warning " + productLabel + " has no title to verify");
+            return true; // Consider it success if no title provided
+        }
+        
+        try {
+            verifyTitlesPresentInUI(List.of(productTitle));
+            System.out.println("Passed " + productLabel + " TITLE found in search results");
+            return true;
+        } catch (Exception e) {
+            System.out.println("Failed " + productLabel + " TITLE not found in search results: " + e.getMessage());
+            return false;
+        }
+    }
+
+ 
+    public boolean verifyProductImage(String imageUrl, String productLabel) {
+        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            System.out.println("Warning " + productLabel + " has no image URL to verify");
+            return true; // Consider it success if no image URL provided
+        }
+        
+        try {
+            validateImagesPresentInUI(List.of(imageUrl));
+            System.out.println("Passed " + productLabel + " IMAGE found in search results");
+            return true;
+        } catch (Exception e) {
+            System.out.println("Failed " + productLabel + " IMAGE not found in search results: " + e.getMessage());
+            return false;
+        }
+    }
+
+
+    public boolean verifyProductUrl(String productUrl, String productLabel) {
+        if (productUrl == null || productUrl.trim().isEmpty()) {
+            System.out.println("Warning " + productLabel + " has no product URL to verify");
+            return true; // Consider it success if no product URL provided
+        }
+        
+        try {
+            if (searchPage.isProductUrlPresent(productUrl)) {
+                System.out.println("Passed " + productLabel + " URL found in search results");
+                return true;
+            } else {
+                System.out.println("Failed " + productLabel + " URL not found in search results");
+                return false;
+            }
+        } catch (Exception e) {
+            System.out.println("Failed " + productLabel + " URL verification failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+
+    public boolean verifyCompleteProduct(String productTitle, String imageUrl, String productUrl, String productLabel) {
+        boolean titleFound = verifyProductTitle(productTitle, productLabel);
+        boolean imageFound = verifyProductImage(imageUrl, productLabel);
+        boolean urlFound = verifyProductUrl(productUrl, productLabel);
+        
+        boolean success = titleFound && imageFound && urlFound;
+        String resultMsg = String.format("%s verification %s | Title=%s | Image=%s | URL=%s",
+                productLabel,
+                success ? "PASSED" : "FAILED",
+                titleFound ? "Passed" : "Failed",
+                imageFound ? "Passed" : "Failed",
+                urlFound ? "Passed" : "Failed");
+        
+        System.out.println(resultMsg);
+        return success;
     }
 
     @FindAll({
-            @FindBy(xpath = ""),
             @FindBy(xpath = "//button[contains(@class,'close')]"),
             @FindBy(xpath = "//div[contains(@class,'popup')]//button[contains(@class,'close')]"),
             @FindBy(xpath = "(//button[@data-role='closeBtn'])[1]"),
-            @FindBy(xpath = "//div[contains(@class, 'overlay')]//button[contains(@class,'close')]")
+            @FindBy(xpath = "//div[contains(@class, 'overlay')]//button[contains(@class,'close')]"),
+            @FindBy(css = "[aria-label*='close'], [aria-label*='Close']"),
+            @FindBy(css = ".modal-close, .popup-close, .overlay-close")
     })
     private List<WebElement> popupCloseButtons;
 
     /**
-     * Closes the first visible popup element if any are present.
+     * Closes the first visible popup element if any are present
      */
     public void closePopupIfPresent() {
-        for (WebElement button : popupCloseButtons) {
-            try {
-                if (button.isDisplayed()) {
+        try {
+            for (WebElement button : popupCloseButtons) {
+                if (isElementClickable(button)) {
                     button.click();
-                    System.out.println("✅ Popup closed via @FindAll");
-                    Thread.sleep(1000); // Let overlay disappear
-                    break;
+                    Thread.sleep(POPUP_SLEEP_DURATION);
+                    return; // Exit after first successful close
                 }
-            } catch (Exception e) {
-                // It's normal for many buttons to not be available — so just log and move on
-                System.out.println("⚠️ Popup not interactable or not found: " + e.getMessage());
             }
+        } catch (Exception e) {
+            // Popup handling is non-critical, continue with test execution
+            System.out.println("⚠️ Popup handling failed, continuing with test: " + e.getMessage());
         }
     }
 
-//    public void closePopupIfPresent() {
-//        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(3));
-//        for (WebElement button : popupCloseButtons) {
-//            try { if (button.isDisplayed()) {
-//                    // Wait briefly if needed for clickability
-//                    wait.until(ExpectedConditions.elementToBeClickable(button));
-//                    // Use JS to avoid intercepts
-//                    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", button);
-//                    System.out.println("✅ Popup closed via JS click");
-//                    return;
-//                }
-//            } catch (Exception e) {
-//                // Continue checking next close button if this one fails
-//                System.out.println("⚠️ Could not click popup: " + e.getMessage());
-//            }
-//        }
-//    }
-
-
-
-
-
-
-
-
-
-
-
-    // Generic method to return the first visible and enabled element from multiple locators
     public WebElement findFirstVisibleElement(By... locators) {
         for (By locator : locators) {
             List<WebElement> elements = driver.findElements(locator);
-            for (WebElement el : elements) {
-                if (el.isDisplayed() && el.isEnabled()) {
-                    return el;
+            for (WebElement element : elements) {
+                if (isElementVisible(element)) {
+                    return element;
                 }
             }
         }
-        throw new NoSuchElementException("No visible/enabled element found from provided locators.");
+        throw new NoSuchElementException("No visible/enabled element found from provided locators");
     }
 
-    // Generic method to get list of elements from the first matching non-empty locator
     public List<WebElement> findVisibleElements(By... locators) {
         for (By locator : locators) {
             List<WebElement> elements = driver.findElements(locator);
             if (!elements.isEmpty()) {
-                return elements;
+                List<WebElement> visibleElements = new ArrayList<>();
+                for (WebElement element : elements) {
+                    if (isElementVisible(element)) {
+                        visibleElements.add(element);
+                    }
+                }
+                if (!visibleElements.isEmpty()) {
+                    return visibleElements;
+                }
             }
         }
-        throw new NoSuchElementException("No elements found from provided autosuggest locators.");
+        throw new NoSuchElementException("No visible elements found from provided locators");
     }
 
+    public List<String> getDisplayedPrices() {
+        String[] priceSelectors = {
+            ".product-price", ".price", "[data-price]", ".cost", ".amount"
+        };
+        
+        List<String> prices = new ArrayList<>();
+        for (String selector : priceSelectors) {
+            List<WebElement> priceElements = driver.findElements(By.cssSelector(selector));
+            for (WebElement element : priceElements) {
+                if (isElementVisible(element)) {
+                    String priceText = element.getText().trim();
+                    if (!priceText.isEmpty()) {
+                        prices.add(priceText);
+                    }
+                }
+            }
+            if (!prices.isEmpty()) {
+                break; // Return prices from first successful selector
+            }
+        }
+        return prices;
+    }
+
+
+    private String normalizeText(String text) {
+        return text
+                .replaceAll("[^\\p{ASCII}]", "") // Remove non-ASCII characters
+                .replaceAll("\\s+", " ")         // Normalize whitespace
+                .trim()
+                .toLowerCase();
+    }
+
+    private boolean isElementVisible(WebElement element) {
+        try {
+            return element.isDisplayed() && element.isEnabled();
+        } catch (StaleElementReferenceException e) {
+            return false;
+        }
+    }
+
+    private boolean isElementClickable(WebElement element) {
+        try {
+            return element.isDisplayed() && element.isEnabled();
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

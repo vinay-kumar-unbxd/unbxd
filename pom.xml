@@ -15,7 +15,7 @@
                 <version>3.1.2</version>
                 <configuration>
                     <suiteXmlFiles>
-                        <suiteXmlFile>testng.xml</suiteXmlFile>
+                        <suiteXmlFile>${testng.suite}</suiteXmlFile>
                     </suiteXmlFiles>
                 </configuration>
             </plugin>
@@ -26,7 +26,37 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <testng.suite>src/test/resources/testng.xml</testng.suite>
     </properties>
+
+    <profiles>
+        <!-- Default profile - Original test suite -->
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <testng.suite>src/test/resources/testng.xml</testng.suite>
+            </properties>
+        </profile>
+
+        <!-- Search tests profile -->
+        <profile>
+            <id>search-tests</id>
+            <properties>
+                <testng.suite>src/test/resources/search-testng.xml</testng.suite>
+            </properties>
+        </profile>
+
+        <!-- Single search test profile -->
+        <profile>
+            <id>single-search</id>
+            <properties>
+                <testng.suite>src/test/resources/single-search-test.xml</testng.suite>
+            </properties>
+        </profile>
+    </profiles>
     <dependencies>
         <dependency>
             <groupId>com.aventstack</groupId>
@@ -69,6 +99,12 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.32</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

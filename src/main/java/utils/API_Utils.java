@@ -119,6 +119,52 @@ public class API_Utils {
         response.then().statusCode(200); // Assert 200 OK
         return response;
     }
+
+    public static List<String> getProductTitles(Response response) {
+        List<Map<String, Object>> allProducts = response.jsonPath().getList("response.products");
+        List<String> titles = new ArrayList<>();
+
+        for (Map<String, Object> product : allProducts) {
+            String title = (String) product.get("title");
+            if (title != null && !title.trim().isEmpty()) {
+                titles.add(title.trim());
+            }
+        }
+        return titles;
+    }
+
+    public static List<String> getProductImageUrls(Response response) {
+        List<Map<String, Object>> allProducts = response.jsonPath().getList("response.products");
+        List<String> imageUrls = new ArrayList<>();
+
+        for (Map<String, Object> product : allProducts) {
+            Object imageUrlObj = product.get("imageUrl");
+
+            if (imageUrlObj instanceof List) {
+                List<?> imageList = (List<?>) imageUrlObj;
+                if (!imageList.isEmpty()) {
+                    imageUrls.add(imageList.get(0).toString());
+                }
+            } else if (imageUrlObj instanceof String) {
+                imageUrls.add(imageUrlObj.toString());
+            }
+        }
+        return imageUrls;
+    }
+
+    public static List<String> getProductUrls(Response response) {
+        List<Map<String, Object>> allProducts = response.jsonPath().getList("response.products");
+        List<String> productUrls = new ArrayList<>();
+
+        for (Map<String, Object> product : allProducts) {
+            String productUrl = (String) product.get("productUrl");
+            if (productUrl != null && !productUrl.trim().isEmpty()) {
+                productUrls.add(productUrl.trim());
+            }
+        }
+        return productUrls;
+    }
+
     public static int getTotalProductCount(Response response) {
         return response.jsonPath().getInt("response.numberOfProducts");
     }

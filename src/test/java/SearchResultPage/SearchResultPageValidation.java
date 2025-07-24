@@ -6,25 +6,20 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import pages.BasePage;
 import utils.API_Utils;
-import utils.DataUtils;
-import utils.ExcelReader;
+import utils.TestData;
 
 public class SearchResultPageValidation extends BaseTest {
 
     @Test
     public void totalProductCount()
     {
-        String [] data = ExcelReader.readRowByKey("data.xlsx", "unique-vintage");
-        String siteUrl = data[1];
-        String baseUrl = data[2];
-        String search = data[6];
-        String endPointSRP = data[7];
-        String query = data[5];
-
-        String searchUrl = data[8];
-
-        String apiUrl = baseUrl+search+query+endPointSRP;
-        String siteUrlSearch = siteUrl+searchUrl+query;
+        TestData testData = new TestData("data.xlsx", "unique-vintage");
+        
+        String siteUrl = testData.getSiteUrl();
+        String query = testData.getQuery();
+        String apiUrl = testData.getSearchApiUrl();
+        String searchUrl = testData.getValue("searchUrl");
+        String siteUrlSearch = siteUrl + searchUrl + query;
 
         BasePage basePage = new BasePage(driver);
 

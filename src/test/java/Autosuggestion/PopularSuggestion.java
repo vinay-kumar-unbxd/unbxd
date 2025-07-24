@@ -2,66 +2,84 @@ package Autosuggestion;
 
 import Base.BaseTest;
 import io.restassured.response.Response;
-import org.testng.IReporter;
 import org.testng.Reporter;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 import pages.BasePage;
 import utils.API_Utils;
-import utils.DataUtils;
-import utils.ExcelReader;
+import utils.TestData;
 
 import java.util.List;
-
-import static utils.DataUtils.convertNumberListToStringList;
 
 public class PopularSuggestion extends BaseTest {
 
     @Test
     @Parameters("testKey")
     public void validatePopularProducts( ) throws InterruptedException {
+        logInfo("🚀 Starting Popular Products Validation");
 
-        String[] data = ExcelReader.readRowByKey("data.xlsx", "kpnfresh");
+        TestData testData = new TestData("data.xlsx", "footlocker");
 
-        String siteUrl = data[1];
-        String baseUrl = data[2];
-        String autosuggest = data[3];
-        String endPointAS = data[4];
-
-        String query = data[5];
-        String apiUrl = baseUrl+autosuggest+query+endPointAS;
+        String siteUrl = testData.getSiteUrl();
+        String apiUrl = testData.getAutosuggestApiUrl();
+        String query = testData.getQuery();
+        
+        logInfo("🔗 API URL: " + apiUrl);
+        logInfo("🌐 Site URL: " + siteUrl);
+        logInfo("🔍 Search Query: " + query);
+        
         BasePage basePage= new BasePage(driver);
 
+        logInfo("📡 Calling Autosuggest API for Popular Products...");
         Response response = API_Utils.getAutosuggestResponse(apiUrl);
+        logPass("✅ API Response received successfully with status: " + response.getStatusCode());
+        
         List<String> popularProducts = API_Utils.getSuggestionsTitle(response, "POPULAR_PRODUCTS", "title");
-
-        List<String> popularProductPrices = API_Utils.getSuggestionsPriceStrings(response, "POPULAR_PRODUCTS", "price");
+        logInfo("🎯 Found " + popularProducts.size() + " popular products from API");
 
         //fetch popular product image urls
         List<String> popularProductsImage = API_Utils.getFirstImageUrls(response, "POPULAR_PRODUCTS");
+        logInfo("🖼️ Found " + popularProductsImage.size() + " product images from API");
 
-
+        logInfo("🌐 Navigating to website: " + siteUrl);
         driver.get(siteUrl);
-  //      basePage.closePopupIfPresent();
+        logPass("✅ Successfully navigated to website");
+        
         Thread.sleep(1000);
+        logInfo("🔍 Entering search query: " + query);
         basePage.searchPage.enterInSearchBox(query);
+        logPass("✅ Search query entered successfully");
 
-        System.out.println("=== POPULAR_PRODUCTS Titles ===");
-        for (String title : popularProducts) {
-            System.out.println(title);
+        logInfo("📝 Popular Product Titles from API:");
+        for (int i = 0; i < popularProducts.size(); i++) {
+            String title = popularProducts.get(i);
+            logInfo("   " + (i+1) + ". " + title);
             Reporter.log(title);
         }
 
-        System.out.println("===validated UI titles===");
-        basePage.verifyTitlesPresentInUI(popularProducts);
+        logInfo("🔍 Validating popular product titles in UI...");
+        try {
+            basePage.verifyTitlesPresentInUI(popularProducts);
+            logPass("✅ All popular product titles successfully validated in UI");
+        } catch (Exception e) {
+            logFail("❌ Popular product title validation failed: " + e.getMessage());
+            throw e;
+        }
 
+        logInfo("🖼️ Popular Product Image URLs from API:");
+        for (int i = 0; i < popularProductsImage.size(); i++) {
+            String imageUrl = popularProductsImage.get(i);
+            logInfo("   " + (i+1) + ". " + imageUrl);
+        }
 
-        System.out.println("=== POPULAR_PRODUCTS Image url ===");
-        for (String title : popularProductsImage) {
-            System.out.println(title);}
-
-        System.out.println("===validated image urls===");
-        basePage.validateImagesPresentInUI(popularProductsImage);
+        logInfo("🔍 Validating popular product images in UI...");
+        try {
+            basePage.validateImagesPresentInUI(popularProductsImage);
+            logPass("✅ All popular product images successfully validated in UI");
+        } catch (Exception e) {
+            logFail("❌ Popular product image validation failed: " + e.getMessage());
+            throw e;
+        }
 
 //        System.out.println("=== Selling Price ===");
 //        for (String title : popularProductPrices) {

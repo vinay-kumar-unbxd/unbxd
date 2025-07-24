@@ -6,6 +6,7 @@
             <class name="Autosuggestion.PopularSuggestion"/>
             <class name="Autosuggestion.KeywordSuggestion"/>
             <class name="Autosuggestion.TopSearchQueries"/>
+            <class name="SearchResultPage.SearchWithProductTitle"/>
         </classes>
     </test>
 </suite>

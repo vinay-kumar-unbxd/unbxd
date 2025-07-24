@@ -17,16 +17,13 @@ public class SearchPage{
     }
 
     @FindAll({
-            @FindBy(xpath = "//input[@type='search']"),
-            @FindBy(xpath = "//input[@name='q']"),
-            @FindBy(xpath = "//input[contains(@placeholder, 'Search')]"),
-            @FindBy(css = "form[action*='/search'] input[type='search']"),
-            @FindBy(xpath = "//form[contains(@action, '/search')]//input"),
-            @FindBy(xpath = "//input[@type='text']"),
+        @FindBy(css = "input[type='search'], input[name='w'], input[name='q'], input[placeholder*='Search']"),
+        @FindBy(xpath = "//input[@id='sli_search_1'] | //input[@name='w'] | //input[@type='search'] | //input[@name='q'] | //input[contains(@placeholder, 'Search')] | //input[contains(@placeholder, 'Keyword')]")
     })
     private WebElement searchBox;
 
     @FindAll({
+            @FindBy(css = "button[data-click='close']"),
             @FindBy(xpath = "//button[contains(@class,'close')]"),
             @FindBy(xpath = "//div[contains(@class,'popup')]//button[contains(@class,'close')]"),
             @FindBy(xpath = "//div[contains(@class,'modal')]//button[contains(text(),'×')]"),
@@ -38,32 +35,84 @@ public class SearchPage{
     })
     private WebElement closeIcon;
 
-    public void enterInSearchBox(String data)
-    {   searchBox.click();
-        searchBox.sendKeys(data); }
 
     @FindAll({
-            @FindBy(xpath = "//span[contains(@id,'ProductCount')]"),
-            @FindBy(xpath = "//div[contains(text(),'products')]"),
-            @FindBy(xpath = "//span[contains(text(),'items')]"),
-            @FindBy(xpath = "//*[contains(text(),'Showing')]"),
-            @FindBy(css = ".product-count")
+        @FindBy(css = "span[id*='ProductCount'], span:contains('items'), *:contains('Showing'), .product-count"),
+        @FindBy(xpath = "//span[contains(@id,'ProductCount')]"),
+        @FindBy(xpath = "//span[contains(text(),'items')]"),
+        @FindBy(xpath = "//*[contains(text(),'Showing')]"),
     })
     private List<WebElement> productCountElements;
+
+    @FindAll({
+        @FindBy(css = ".product-item a, .product-card a, .product a"),
+        @FindBy(css = "a[href*='/product'], a[href*='/products'], a[href*='catalog/product']"),
+        @FindBy(css = "#insider-worker"),
+        @FindBy(xpath = "//div[contains(@class,'product')]//a"),
+        @FindBy(xpath = "//article[contains(@class,'product')]//a"),
+        @FindBy(xpath = "//li[contains(@class,'product')]//a"),
+        @FindBy(xpath = "//a[contains(@href,'product')]")
+    })
+    private List<WebElement> productLinks;
+
+    public void enterInSearchBox(String data)
+    {   
+        // Try to close any overlays/popups first
+        closePopupIfPresent();
+        
+        // Wait a moment for popups to disappear
+        try { Thread.sleep(1000); } catch (InterruptedException e) {}
+        
+        // Use JavaScript click if regular click fails
+        try {
+            searchBox.click();
+        } catch (Exception e) {
+            ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", searchBox);
+        }
+        
+        searchBox.clear();
+        searchBox.sendKeys(data); 
+    }
 
 
 
 
     public void closePopupIfPresent() {
-            try {
-                if (closeIcon.isDisplayed()) {
-                    closeIcon.click();
-                    System.out.println("✅ Popup closed via @FindAll");
+        try {
+            // Try to close various types of overlays and popups
+            String[] popupSelectors = {
+                "button.close, .popup .close, .modal .close, [aria-label='Close'], .popup-close, .close-popup",
+                "[data-testid='close'], [data-cy='close'], .overlay-close",
+                ".bounce-element button, .bounce-element .close",
+                "[class*='popup'] button, [class*='modal'] button, [class*='overlay'] button",
+                "img[src*='bounce'], div[id*='bounce']"  // Try to handle bounce exchange overlays
+            };
+            
+            for (String selector : popupSelectors) {
+                List<WebElement> elements = driver.findElements(By.cssSelector(selector));
+                for (WebElement element : elements) {
+                    if (element.isDisplayed() && element.isEnabled()) {
+                        try {
+                            element.click();
+                            Thread.sleep(500);  // Wait for overlay to disappear
+                            return;
+                        } catch (Exception clickEx) {
+                            // Try JS click
+                            ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+                            Thread.sleep(500);
+                            return;
+                        }
+                    }
                 }
-            } catch (Exception e) {
-                System.out.println("⚠️ Failed to click popup close button: " + e.getMessage());
             }
+            
+            // If no close button found, try to click outside the overlay
+            ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("document.body.click();");
+            
+        } catch (Exception e) {
+            // Popup handling failed, continue with test
         }
+    }
 
     public int getProductCountFromUI() {
         for (WebElement element : productCountElements) {
@@ -132,5 +181,59 @@ public class SearchPage{
             throw new NoSuchElementException("Autosuggest list not found.");
         }
         return autosuggestElements;
+    }
+
+    /**
+     * Get all product links from search results
+     * @return List of product link WebElements
+     */
+    public List<WebElement> getProductLinks() {
+        return productLinks;
+    }
+
+    /**
+     * Check if a specific product URL or slug is present in search results
+     * @param productUrl Full product URL or slug to search for
+     * @return true if product URL/slug is found, false otherwise
+     */
+    public boolean isProductUrlPresent(String productUrl) {
+        if (productUrl == null || productUrl.isEmpty()) {
+            return false;
+        }
+
+        // Extract slug from full URL for flexible matching
+        String productSlug = extractProductSlug(productUrl);
+
+        for (WebElement link : productLinks) {
+            String href = link.getAttribute("href");
+            if (href != null && (href.contains(productUrl) || href.contains(productSlug))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get count of product links in search results
+     * @return Number of product links found
+     */
+    public int getProductLinksCount() {
+        return productLinks.size();
+    }
+
+    /**
+     * Helper method to extract product slug from full URL
+     * @param fullUrl Full product URL
+     * @return Product slug or path portion
+     */
+    private String extractProductSlug(String fullUrl) {
+        if (fullUrl == null || fullUrl.isEmpty()) return "";
+        
+        // Extract the last part of the URL path (product slug)
+        String[] urlParts = fullUrl.split("/");
+        if (urlParts.length > 0) {
+            return urlParts[urlParts.length - 1];
+        }
+        return fullUrl;
     }
 }
