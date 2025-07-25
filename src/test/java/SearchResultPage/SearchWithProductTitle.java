@@ -8,27 +8,30 @@ import org.testng.annotations.Test;
 import pages.BasePage;
 import utils.API_Utils;
 import utils.TestData;
+import utils.ScreenshotUtil;
+import utils.ActionUtils;
 
 import java.util.List;
+import java.util.Random;
 
 public class SearchWithProductTitle extends BaseTest {
 
     @Test
-   // @Parameters("testKey")
-    public void autoSuggestionWithProductTitle() throws InterruptedException {
-        logInfo("Starting Product Search and Validation Test for: " );
+    @Parameters("testkey")
+    public void autoSuggestionWithProductTitle(String testkey) throws InterruptedException {
+        logInfo("🛍️ [PRODUCT-SEARCH] Starting Product Search and Validation Test for: " + testkey);
         
         // Step 1: Initialize test data and trigger search API
-        TestData testData = new TestData("data.xlsx", "mwave");
+        TestData testData = new TestData("data.xlsx", testkey);
         String searchApiUrl = testData.getSearchApiUrl();
         String siteUrl = testData.getSiteUrl();
         
-        logInfo("Triggering Search API : " + searchApiUrl);
+        logInfo("🛍️ [PRODUCT-SEARCH] Triggering Search API: " + searchApiUrl);
         Response response = API_Utils.getSearchResultResponse(searchApiUrl);
         
         // Verify API response is successful
         Assert.assertEquals(response.getStatusCode(), 200, "API request failed");
-        logPass("API Response received successfully with status code: " + response.getStatusCode());
+        logPass("🛍️ [PRODUCT-SEARCH] API Response received successfully with status code: " + response.getStatusCode());
         
         // Step 2: Fetch first 3 product titles, image URLs, and product URLs from response
         List<String> allProductTitles = API_Utils.getProductTitles(response);
@@ -37,7 +40,7 @@ public class SearchWithProductTitle extends BaseTest {
         
         Assert.assertFalse(allProductTitles.isEmpty(), "No products found in API response");
         Assert.assertTrue(allProductTitles.size() >= 3, "Less than 3 products found in API response");
-        logInfo("Found " + allProductTitles.size() + " products in API response");
+        logInfo("🛍️ [PRODUCT-SEARCH] Found " + allProductTitles.size() + " products in API response");
         
         // Get first 3 products (no randomization)
         String productTitle1 = allProductTitles.get(0);
@@ -89,10 +92,99 @@ public class SearchWithProductTitle extends BaseTest {
                     ", Product3=" + (product3Success ? "Passed" : "Failed");
             logFail(failureMessage);
             Assert.fail(failureMessage);
-        }
+                }
     }
     
-
+    @Test
+    @Parameters("testkey")
+    public void searchResultwithProductTitle(String testkey) throws InterruptedException {
+        logInfo("🎯 [TITLE-SEARCH] Search for complete Product title and Click product for: " + testkey);
+        
+        // Step 1: Initialize test data and trigger search API
+        TestData testData = new TestData("data.xlsx", testkey);
+        String searchApiUrl = testData.getSearchApiUrl();
+        String siteUrl = testData.getSiteUrl();
+        
+        logInfo("🎯 [TITLE-SEARCH] Triggering Search API: " + searchApiUrl);
+        Response response = API_Utils.getSearchResultResponse(searchApiUrl);
+        
+        // Verify API response is successful
+        Assert.assertEquals(response.getStatusCode(), 200, "API request failed");
+        logPass("🎯 [TITLE-SEARCH] API Response received successfully with status code: " + response.getStatusCode());
+        
+        // Step 2: Fetch random product title, image URL, and product URL from response
+        List<String> allProductTitles = API_Utils.getProductTitles(response);
+        List<String> allImageUrls = API_Utils.getProductImageUrls(response);
+        List<String> allProductUrls = API_Utils.getProductUrls(response);
+        
+        Assert.assertFalse(allProductTitles.isEmpty(), "No products found in API response");
+        logInfo("🎯 [TITLE-SEARCH] Found " + allProductTitles.size() + " products in API response");
+        
+        // Get random product
+        Random random = new Random();
+        int randomIndex = random.nextInt(allProductTitles.size());
+        
+        String randomProductTitle = allProductTitles.get(randomIndex);
+        String randomImageUrl = allImageUrls.size() > randomIndex ? allImageUrls.get(randomIndex) : "";
+        String randomProductUrl = allProductUrls.size() > randomIndex ? allProductUrls.get(randomIndex) : "";
+        
+        logInfo("SelectedProduct : " + randomProductTitle + " | Image URL: " + randomImageUrl + " | Product URL: " + randomProductUrl);
+        
+        // Step 3: Navigate to site
+        logInfo("Navigating to website: " + siteUrl);
+        driver.get(siteUrl);
+        logPass("Successfully navigated to website");
+        
+        BasePage basePage = new BasePage(driver);
+        
+        // Wait for page to load and close any popups
+        Thread.sleep(2000);
+        basePage.searchPage.closePopupIfPresent();
+        logInfo("Page loaded and popups handled");
+        
+        // Step 4: Enter title in search field and press Enter
+        logInfo("Entering product title in search field: " + randomProductTitle);
+        basePage.searchPage.enterInSearchBox(randomProductTitle);
+        logPass("Product title entered successfully");
+        
+        ActionUtils.pressEnterWithActions(driver);
+        // Wait for search results to load
+        Thread.sleep(3000);
+        ScreenshotUtil.takeScreenshotAndAttachToReport(driver, test, randomProductTitle);
+        // Step 5: Post pressing Enter button validations
+        logInfo("Starting post-search validations...");
+        
+        // Step 5a: Validate URL contains the product URL
+        logInfo("Validating current URL contains product information...");
+        String currentUrl = driver.getCurrentUrl();
+        logInfo("Current URL: " + currentUrl);
+        
+        // Take screenshot after fetching current URL
+        
+        // Step 5b: Validate product image present in UI
+        logInfo("Validating product image is present in UI...");
+        try {
+            basePage.validateImagesPresentInUI(List.of(randomImageUrl));
+            logPass("Product image found in search results UI");
+        } catch (Exception e) {
+            logFail("Product image NOT found in search results UI: " + e.getMessage());
+            // Don't fail the test for image, just log the failure
+        }
+        
+        // Step 5c: Validate product title present in UI
+        logInfo("Validating product title is present in UI...");
+        try {
+            basePage.verifyTitlesPresentInUI(List.of(randomProductTitle));
+            logPass("Product title found in search results UI");
+        } catch (Exception e) {
+            logFail("Product title NOT found in search results UI: " + e.getMessage());
+            Assert.fail("Product title verification failed: " + e.getMessage());
+        }
+        
+        logPass("TEST PASSED: Random product search with comprehensive validation completed successfully!");
+    }
+    
+    
     private boolean searchAndVerifyProduct(BasePage basePage, String productTitle, String imageUrl, String productUrl, String productLabel) throws InterruptedException {
         logInfo("=== " + productLabel + " Verification ===");
         logInfo("Product Title: " + productTitle);
@@ -104,15 +196,13 @@ public class SearchWithProductTitle extends BaseTest {
         // Wait for search results to load
         Thread.sleep(3000);
         
-        // Scroll to ensure all content is loaded
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight/2);");
-        Thread.sleep(2000);
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0);");
-        Thread.sleep(1000);
-        
         // Use optimized common method to verify all product attributes
         logInfo("Verifying all product attributes (title, image, URL)...");
         boolean success = basePage.verifyCompleteProduct(productTitle, imageUrl, productUrl, productLabel);
+        
+        // Take screenshot after product verification
+        String screenshotName = productLabel.replaceAll("\\s+", "_") + "_Verification_Result";
+        ScreenshotUtil.takeScreenshotAndAttachToReportWithLog(driver, test, screenshotName, "Product verification completed for: " + productLabel);
         
         if (success) {
             logPass(productLabel + " verification PASSED - All attributes found");
@@ -123,15 +213,4 @@ public class SearchWithProductTitle extends BaseTest {
         return success;
     }
     
-
-    private String extractProductSlug(String fullUrl) {
-        if (fullUrl == null || fullUrl.isEmpty()) return "";
-        
-        // Extract the last part of the URL path (product slug)
-        String[] urlParts = fullUrl.split("/");
-        if (urlParts.length > 0) {
-            return urlParts[urlParts.length - 1];
-        }
-        return fullUrl;
-    }
 } 

@@ -31,10 +31,10 @@ public class KeywordSuggestion extends BaseTest {
         BasePage basePage = new BasePage(driver);
 
         logInfo("📡 Calling Autosuggest API...");
-        Response response = API_Utils.getAutosuggestResponse(apiUrl);
+        Response response = API_Utils.getAutosuggestResponse(apiUrl, logger);
         logPass("✅ API Response received successfully with status: " + response.getStatusCode());
         
-        List<String> keywordSuggest = API_Utils.getSuggestionsTitle(response, "KEYWORD_SUGGESTION", "autosuggest");
+        List<String> keywordSuggest = API_Utils.getSuggestionsTitlesList(response, "KEYWORD_SUGGESTION", "autosuggest");
         logInfo("📋 Found " + keywordSuggest.size() + " keyword suggestions from API");
 
         logInfo("🌐 Navigating to website: " + siteUrl);

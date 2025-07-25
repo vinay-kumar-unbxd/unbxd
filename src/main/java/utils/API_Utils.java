@@ -1,19 +1,38 @@
 package utils;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class API_Utils {
-    public static Response getAutosuggestResponse(String apiUrl) {
+    public static Response getAutosuggestResponse(String apiUrl, ValidationUtils.TestLogger logger) {
         Response response = RestAssured.get(apiUrl);
-       response.then().statusCode(200); // Assert 200 OK
+        int statusCode = response.getStatusCode();
+        if (statusCode == 200) {
+            logger.logPass("✅ API Response received successfully with status code: " + statusCode);
+        } else {
+            logger.logFail("❌ API request failed with status code: " + statusCode);
+            throw new AssertionError("Expected status code 200, but got: " + statusCode);
+        }
         return response;
     }
 
-    public static List<String> getSuggestionsTitle(Response response, String docType, String path) {
+    public static Response getAndValidateApiResponse(String url, ValidationUtils.TestLogger logger) {
+        Response response = RestAssured.get(url);
+
+        int statusCode = response.getStatusCode();
+        if (statusCode == 200) {
+            logger.logPass("✅ API Response received successfully with status code: " + statusCode);
+        } else {
+            logger.logFail("❌ API request failed with status code: " + statusCode);
+            throw new AssertionError("Expected status code 200, but got: " + statusCode);
+        }
+
+        return response;
+    }
+
+    public static List<String> getSuggestionsTitlesList(Response response, String docType, String path) {
         List<Map<String, Object>> allProducts = response.jsonPath().getList("response.products");
         List<String> suggestions = new ArrayList<>();
 
@@ -28,32 +47,29 @@ public class API_Utils {
         return suggestions;
     }
 
-//    public static List<Number> getSuggestionsNumericValue(Response response, String docType, String fieldName) {
-//        List<Map<String, Object>> allProducts = response.jsonPath().getList("response.products");
-//        List<Number> values = new ArrayList<>();
-//
-//        for (Map<String, Object> product : allProducts) {
-//            if (docType.equals(product.get("doctype"))) {
-//                Object fieldValue = product.get(fieldName);
-//
-//                if (fieldValue instanceof Number) {
-//                    values.add((Number) fieldValue); // handles Integer, Double, etc.
-//                } else if (fieldValue instanceof String) {
-//                    String numericPart = ((String) fieldValue).replaceAll("[^0-9.]", "");
-//                    try {
-//                        // Check if it’s an integer or double based on presence of "."
-//                        Number parsedValue = numericPart.contains(".")
-//                                ? Double.parseDouble(numericPart)
-//                                : Integer.parseInt(numericPart);
-//                        values.add(parsedValue);
-//                    } catch (NumberFormatException e) {
-//                        System.out.println("❌ Unable to parse numeric field: " + fieldValue);
-//                    }
-//                }
-//            }
-//        }
-//        return values;
-//    }
+    public static List<String> getSuggestionsFirstImageUrlsList(Response response, String docType) {
+        List<Map<String, Object>> products = response.jsonPath().getList("response.products");
+        List<String> imageUrls = new ArrayList<>();
+
+        for (Map<String, Object> product : products) {
+            if (docType.equals(product.get("doctype")) || product.get("doctype") == null) {
+                Object imageUrlObj = product.get("imageUrl");
+
+                if (imageUrlObj instanceof List) {
+                    List<?> imageList = (List<?>) imageUrlObj;
+                    if (!imageList.isEmpty()) {
+                        imageUrls.add(imageList.get(0).toString());
+                    }
+                } else if (imageUrlObj instanceof String) {
+                    // fallback if imageUrl is not an array but a single string
+                    imageUrls.add(imageUrlObj.toString());
+                }
+            }
+        }
+
+        return imageUrls;
+    }
+
 
     public static List<String> getSuggestionsPriceStrings(Response response, String docType, String fieldName) {
         List<Map<String, Object>> allProducts = response.jsonPath().getList("response.products");
@@ -89,29 +105,6 @@ public class API_Utils {
         }
 
         return prices;
-    }
-
-    public static List<String> getFirstImageUrls(Response response, String docType) {
-        List<Map<String, Object>> products = response.jsonPath().getList("response.products");
-        List<String> imageUrls = new ArrayList<>();
-
-        for (Map<String, Object> product : products) {
-            if (docType.equals(product.get("doctype")) || product.get("doctype") == null) {
-                Object imageUrlObj = product.get("imageUrl");
-
-                if (imageUrlObj instanceof List) {
-                    List<?> imageList = (List<?>) imageUrlObj;
-                    if (!imageList.isEmpty()) {
-                        imageUrls.add(imageList.get(0).toString());
-                    }
-                } else if (imageUrlObj instanceof String) {
-                    // fallback if imageUrl is not an array but a single string
-                    imageUrls.add(imageUrlObj.toString());
-                }
-            }
-        }
-
-        return imageUrls;
     }
 
     public static Response getSearchResultResponse(String apiUrl) {
@@ -169,8 +162,62 @@ public class API_Utils {
         return response.jsonPath().getInt("response.numberOfProducts");
     }
 
+    public static List<String> getProductSkus(Response response) {
+        List<Map<String, Object>> allProducts = response.jsonPath().getList("response.products");
+        List<String> skus = new ArrayList<>();
+
+        for (Map<String, Object> product : allProducts) {
+            String sku = (String) product.get("sku");
+            if (sku != null && !sku.trim().isEmpty()) {
+                skus.add(sku.trim());
+            }
+        }
+        return skus;
+    }
+
+public static String getPopularProductTitle(Response response, int index) {
+    String title = response.jsonPath().getString("response.products["+index+"].title");
+    if (title == null) {
+        throw new RuntimeException("❌ Product title is null");
+    }
+    if (title.trim().isEmpty()) {
+        throw new RuntimeException("❌ Product title is empty");
+    }
+    return title;
+}
 
 
+    public static String getPopularProductImageUrl(Response response, int index) {
+        String imageUrl = response.jsonPath().getString("response.products["+index+"].imageUrl");
+        if (imageUrl == null) {
+            throw new RuntimeException("❌ Product image URL is null");
+        }
+        if (imageUrl.trim().isEmpty()) {
+            throw new RuntimeException("❌ Product image URL is empty");
+        }
+        return imageUrl;
+    }
+    
+    public static String getPopularProductUrl(Response response, int index) {
+        String productUrl = response.jsonPath().getString("response.products["+index+"].productUrl");
+        if (productUrl == null) {
+            throw new RuntimeException("❌ Product URL is null");
+        }
+        if (productUrl.trim().isEmpty()) {
+            throw new RuntimeException("❌ Product URL is empty");
+        }
+        return productUrl;
+    }
 
+    public static String getPopularProductSku(Response response, int index) {
+        String sku = response.jsonPath().getString("response.products["+index+"].sku");
+        if (sku == null) {
+            throw new RuntimeException("❌ Product SKU is null");
+        }
+        if (sku.trim().isEmpty()) {
+            throw new RuntimeException("❌ Product SKU is empty");
+        }
+        return sku;
+    }
 }
 

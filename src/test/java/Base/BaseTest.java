@@ -7,6 +7,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
+import pages.BasePage;
 import utils.ExtentManager;
 import java.time.Duration;
 import java.lang.reflect.Method;
@@ -24,11 +25,27 @@ public class BaseTest {
     }
 
     @BeforeClass
-    public void setup() {
+    public void setup() throws InterruptedException {
         driver = new ChromeDriver();
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(8));
         driver.manage().window().maximize();
+        
+        // Navigate to default URL and handle popups
+        String defaultUrl = getDefaultUrl();
+        if (defaultUrl != null && !defaultUrl.isEmpty()) {
+            navigateToUrlAndSetup(defaultUrl);
+        }
+        
         System.out.println("🚀 Browser setup completed");
+    }
+    
+    /**
+     * Override this method in test classes to provide specific URL
+     * @return Default URL for the test class
+     */
+    protected String getDefaultUrl() {
+        // Default implementation - can be overridden by test classes
+        return null;
     }
 
     @BeforeMethod
@@ -95,5 +112,43 @@ public class BaseTest {
             test.warning(message);
         }
         System.out.println("⚠️ " + message);
+    }
+    
+    /**
+     * Navigate to URL and handle initial setup
+     * @param siteUrl URL to navigate to
+     * @return BasePage instance
+     */
+    public BasePage navigateToUrlAndSetup(String siteUrl) throws InterruptedException {
+        logInfo("Navigating to website: " + siteUrl);
+        driver.get(siteUrl);
+        logPass("Successfully navigated to website");
+        
+        BasePage basePage = new BasePage(driver);
+        
+        // Wait for page to load and close any popups
+        Thread.sleep(2000);
+        basePage.searchPage.closePopupIfPresent();
+        logInfo("Page loaded and popups handled");
+        
+        return basePage;
+    }
+    
+    /**
+     * Close popup if present
+     */
+    public void closePopupIfPresent() throws InterruptedException {
+        BasePage basePage = new BasePage(driver);
+        basePage.searchPage.closePopupIfPresent();
+        logInfo("Popup check completed");
+    }
+    
+    // Getter methods for listeners and utilities
+    public WebDriver getDriver() {
+        return driver;
+    }
+    
+    public ExtentTest getExtentTest() {
+        return test;
     }
 }

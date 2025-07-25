@@ -17,8 +17,8 @@ public class SearchPage{
     }
 
     @FindAll({
-        @FindBy(css = "input[type='search'], input[name='w'], input[name='q'], input[placeholder*='Search']"),
-        @FindBy(xpath = "//input[@id='sli_search_1'] | //input[@name='w'] | //input[@type='search'] | //input[@name='q'] | //input[contains(@placeholder, 'Search')] | //input[contains(@placeholder, 'Keyword')]")
+        @FindBy(css = "input[type='search'], input[name='w'], input[name='q'], input[placeholder*='Search'], input[placeholder*='looking for']"),
+        @FindBy(xpath = "//input[@id='sli_search_1'] | //input[@type='search'] ")
     })
     private WebElement searchBox;
 
@@ -37,10 +37,7 @@ public class SearchPage{
 
 
     @FindAll({
-        @FindBy(css = "span[id*='ProductCount'], span:contains('items'), *:contains('Showing'), .product-count"),
-        @FindBy(xpath = "//span[contains(@id,'ProductCount')]"),
-        @FindBy(xpath = "//span[contains(text(),'items')]"),
-        @FindBy(xpath = "//*[contains(text(),'Showing')]"),
+        @FindBy(xpath = "//span[contains(@id,'ProductCount') or contains(text(),'products') or contains(text(),'items') or contains(text(),'Items') or contains(text(),'Showing')] | //*[@class='product-count']")
     })
     private List<WebElement> productCountElements;
 
@@ -57,13 +54,9 @@ public class SearchPage{
 
     public void enterInSearchBox(String data)
     {   
-        // Try to close any overlays/popups first
-        closePopupIfPresent();
-        
         // Wait a moment for popups to disappear
         try { Thread.sleep(1000); } catch (InterruptedException e) {}
         
-        // Use JavaScript click if regular click fails
         try {
             searchBox.click();
         } catch (Exception e) {

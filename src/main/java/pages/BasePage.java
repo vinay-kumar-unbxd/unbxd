@@ -19,6 +19,16 @@ public class BasePage {
     protected WebDriver driver;
     protected WebDriverWait wait;
     public SearchPage searchPage;
+    
+    /**
+     * Simple logging method for BasePage
+     */
+    protected void logInfo(String message) {
+        System.out.println("[BasePage] " + message);
+    }
+    
+    @FindBy(css = "img.product-image, img[src*='cdn'], img[src*='media'], img[alt*='Product'], img")
+    public List<WebElement> allImages;
 
     public BasePage(WebDriver driver) {
         this.driver = driver;
@@ -45,25 +55,28 @@ public class BasePage {
             if (elements.isEmpty()) {
                 throw new RuntimeException("Title not found in UI: " + expectedTitle);
             } else {
-                System.out.println("Title found in UI: " + expectedTitle);
+                logInfo("Title found in UI: " + expectedTitle);
             }
         }
     }
 
 
     public void validateImagesPresentInUI(List<String> expectedImageUrls) {
-        for (String imageUrl : expectedImageUrls) {
-            if (imageUrl == null || imageUrl.trim().isEmpty()) {
-                continue; // Skip null or empty URLs
+        for (String expectedUrl : expectedImageUrls) {
+            if (expectedUrl == null || expectedUrl.trim().isEmpty()) continue;
+
+            boolean found = false;
+            for (WebElement img : allImages) {
+                String actualSrc = img.getAttribute("src");
+                if (actualSrc != null && actualSrc.contains(expectedUrl)) {
+                    logInfo("✅ Image found: " + expectedUrl);
+                    found = true;
+                    break;
+                }
             }
-            
-            String xpath = String.format("//img[contains(@src, \"%s\")]", imageUrl);
-            List<WebElement> imageElements = driver.findElements(By.xpath(xpath));
-            
-            if (imageElements.isEmpty()) {
-                throw new RuntimeException("Image not found in UI: " + imageUrl);
-            } else {
-                System.out.println("Image found in UI: " + imageUrl);
+
+            if (!found) {
+                throw new RuntimeException("❌ Image not found in UI: " + expectedUrl);
             }
         }
     }
@@ -71,33 +84,32 @@ public class BasePage {
 
     public boolean verifyProductTitle(String productTitle, String productLabel) {
         if (productTitle == null || productTitle.trim().isEmpty()) {
-            System.out.println("Warning " + productLabel + " has no title to verify");
+            logInfo("Warning " + productLabel + " has no title to verify");
             return true; // Consider it success if no title provided
         }
         
         try {
             verifyTitlesPresentInUI(List.of(productTitle));
-            System.out.println("Passed " + productLabel + " TITLE found in search results");
+            logInfo("Passed " + productLabel + " TITLE found in search results");
             return true;
         } catch (Exception e) {
-            System.out.println("Failed " + productLabel + " TITLE not found in search results: " + e.getMessage());
+            logInfo("Failed " + productLabel + " TITLE not found in search results: " + e.getMessage());
             return false;
         }
     }
 
- 
     public boolean verifyProductImage(String imageUrl, String productLabel) {
         if (imageUrl == null || imageUrl.trim().isEmpty()) {
-            System.out.println("Warning " + productLabel + " has no image URL to verify");
+            logInfo("Warning " + productLabel + " has no image URL to verify");
             return true; // Consider it success if no image URL provided
         }
         
         try {
             validateImagesPresentInUI(List.of(imageUrl));
-            System.out.println("Passed " + productLabel + " IMAGE found in search results");
+            logInfo("Passed " + productLabel + " IMAGE found in search results");
             return true;
         } catch (Exception e) {
-            System.out.println("Failed " + productLabel + " IMAGE not found in search results: " + e.getMessage());
+            logInfo("Failed " + productLabel + " IMAGE not found in search results: " + e.getMessage());
             return false;
         }
     }
@@ -105,20 +117,20 @@ public class BasePage {
 
     public boolean verifyProductUrl(String productUrl, String productLabel) {
         if (productUrl == null || productUrl.trim().isEmpty()) {
-            System.out.println("Warning " + productLabel + " has no product URL to verify");
+            logInfo("Warning " + productLabel + " has no product URL to verify");
             return true; // Consider it success if no product URL provided
         }
         
         try {
             if (searchPage.isProductUrlPresent(productUrl)) {
-                System.out.println("Passed " + productLabel + " URL found in search results");
+                logInfo("Passed " + productLabel + " URL found in search results");
                 return true;
             } else {
-                System.out.println("Failed " + productLabel + " URL not found in search results");
+                logInfo("Failed " + productLabel + " URL not found in search results");
                 return false;
             }
         } catch (Exception e) {
-            System.out.println("Failed " + productLabel + " URL verification failed: " + e.getMessage());
+            logInfo("Failed " + productLabel + " URL verification failed: " + e.getMessage());
             return false;
         }
     }
@@ -136,8 +148,7 @@ public class BasePage {
                 titleFound ? "Passed" : "Failed",
                 imageFound ? "Passed" : "Failed",
                 urlFound ? "Passed" : "Failed");
-        
-        System.out.println(resultMsg);
+        logInfo(resultMsg);
         return success;
     }
 
@@ -165,7 +176,7 @@ public class BasePage {
             }
         } catch (Exception e) {
             // Popup handling is non-critical, continue with test execution
-            System.out.println("⚠️ Popup handling failed, continuing with test: " + e.getMessage());
+            logInfo("⚠️ Popup handling failed, continuing with test: " + e.getMessage());
         }
     }
 
@@ -246,4 +257,32 @@ public class BasePage {
             return false;
         }
     }
+    public void clickOnTitle(String expectedTitle) {
+        if (expectedTitle == null || expectedTitle.trim().isEmpty()) {
+            throw new IllegalArgumentException("Expected title is null or empty");
+        }
+    
+        String normalizedTitle = expectedTitle.trim().toLowerCase();
+    
+        String xpath = String.format(
+            "//*[contains(translate(normalize-space(.), " +
+            "'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), \"%s\")]",
+            normalizedTitle
+        );
+    
+        List<WebElement> elements = driver.findElements(By.xpath(xpath));
+    
+        for (int i = elements.size() - 1; i >= 0; i--) {
+            WebElement element = elements.get(i);
+            if (element.isDisplayed()) {
+                logInfo("Clicking on last matching title: " + expectedTitle);
+                element.click();
+                return;
+            }
+        }
+    
+        throw new RuntimeException("Title not found or not clickable: " + expectedTitle);
+    }
+    
+    
 }
