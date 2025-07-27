@@ -9,6 +9,7 @@
             <class name="SearchResultPage.SkuSearchValidation"/>
             <class name="SearchResultPage.SearchResultPageValidation"/>
             <class name="SearchResultPage.SearchWithProductTitle"/>
+            <class name="Autosuggestion.PopularProdcuctClickValidation"/>
         </classes>
     </test>
 </suite>

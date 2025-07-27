@@ -3,6 +3,7 @@ package Autosuggestion;
 import Base.BaseTest;
 import io.restassured.response.Response;
 import org.testng.Assert;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 import utils.TestData;
 import pages.BasePage;
@@ -13,11 +14,12 @@ import utils.ScreenshotUtil;
 public class PopularProdcuctClickValidation extends BaseTest {
 
     @Test
-    public void validatePopularProductClick() throws InterruptedException {
-        logInfo("🔍 Starting Popular Product Click Validation");
+    @Parameters("testkey")
+    public void validatePopularProductClick(String testkey) throws InterruptedException {
+        logInfo("🔍 Starting Popular Product Click Validation for: " + testkey);
 
         // Get test data and API response
-        TestData testData = new TestData("data.xlsx", "mwave");
+        TestData testData = new TestData("data.xlsx", testkey);
         Response response = API_Utils.getAutosuggestResponse(testData.getAutosuggestApiUrl(), createLogger());
 
         String popularProductTitle = API_Utils.getPopularProductTitle(response, 0);

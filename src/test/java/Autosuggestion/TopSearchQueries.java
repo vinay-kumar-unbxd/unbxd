@@ -31,10 +31,10 @@ public class TopSearchQueries extends BaseTest {
         BasePage basePage = new BasePage(driver);
 
         logInfo("📡 Calling Autosuggest API for Top Search Queries...");
-        Response response = API_Utils.getAutosuggestResponse(apiUrl);
+        Response response = API_Utils.getAutosuggestResponse(apiUrl, createLogger());
         logPass("✅ API Response received successfully with status: " + response.getStatusCode());
         
-        List<String> keywordSuggest = API_Utils.getSuggestionsTitle(response, "TOP_SEARCH_QUERIES", "autosuggest");
+        List<String> keywordSuggest = API_Utils.getSuggestionsTitlesList(response, "TOP_SEARCH_QUERIES", "autosuggest");
         logInfo("🔥 Found " + keywordSuggest.size() + " top search queries from API");
 
         logInfo("🌐 Navigating to website: " + siteUrl);
@@ -62,5 +62,24 @@ public class TopSearchQueries extends BaseTest {
             throw e;
         }
 
+    }
+
+    private utils.ValidationUtils.TestLogger createLogger() {
+        return new utils.ValidationUtils.TestLogger() {
+            @Override
+            public void logInfo(String message) {
+                TopSearchQueries.this.logInfo(message);
+            }
+
+            @Override
+            public void logPass(String message) {
+                TopSearchQueries.this.logPass(message);
+            }
+
+            @Override
+            public void logFail(String message) {
+                TopSearchQueries.this.logFail(message);
+            }
+        };
     }
 }

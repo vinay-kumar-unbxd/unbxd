@@ -31,7 +31,7 @@ public class KeywordSuggestion extends BaseTest {
         BasePage basePage = new BasePage(driver);
 
         logInfo("📡 Calling Autosuggest API...");
-        Response response = API_Utils.getAutosuggestResponse(apiUrl, logger);
+        Response response = API_Utils.getAutosuggestResponse(apiUrl, createLogger());
         logPass("✅ API Response received successfully with status: " + response.getStatusCode());
         
         List<String> keywordSuggest = API_Utils.getSuggestionsTitlesList(response, "KEYWORD_SUGGESTION", "autosuggest");
@@ -71,4 +71,22 @@ public class KeywordSuggestion extends BaseTest {
 
     }
 
+    private utils.ValidationUtils.TestLogger createLogger() {
+        return new utils.ValidationUtils.TestLogger() {
+            @Override
+            public void logInfo(String message) {
+                KeywordSuggestion.this.logInfo(message);
+            }
+
+            @Override
+            public void logPass(String message) {
+                KeywordSuggestion.this.logPass(message);
+            }
+
+            @Override
+            public void logFail(String message) {
+                KeywordSuggestion.this.logFail(message);
+            }
+        };
+    }
 }
