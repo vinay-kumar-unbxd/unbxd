@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="SpellCheckQueryTestSuite" parallel="methods" thread-count="3">
+    <test name="SpellCheckValidationTests">
+        <classes>
+            <class name="SearchResultPage.SpellCheckQuery">
+                <methods>
+                    <include name="validateSpellCheckQuery"/>
+                    <parameter name="vertical" value="Fashion &amp; Apparel"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+    
+    <test name="ElectronicsSpellCheck">
+        <classes>
+            <class name="SearchResultPage.SpellCheckQuery">
+                <methods>
+                    <include name="validateSpellCheckQuery"/>
+                    <parameter name="vertical" value="Electronics"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+    
+    <test name="HealthcareSpellCheck">
+        <classes>
+            <class name="SearchResultPage.SpellCheckQuery">
+                <methods>
+                    <include name="validateSpellCheckQuery"/>
+                    <parameter name="vertical" value="Healthcare"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+    
+    <test name="SpellCheckComparisonTests">
+        <classes>
+            <class name="SearchResultPage.SpellCheckQuery">
+                <methods>
+                    <include name="compareSpellCheckWithCorrectQuery"/>
+                    <parameter name="vertical" value="Beauty &amp; Cosmetics"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite> 

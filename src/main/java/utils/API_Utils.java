@@ -4,6 +4,7 @@ import io.restassured.response.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import io.restassured.path.json.JsonPath;
 
 public class API_Utils {
     public static Response getAutosuggestResponse(String apiUrl, ValidationUtils.TestLogger logger) {
@@ -145,17 +146,25 @@ public class API_Utils {
         return imageUrls;
     }
 
-    public static List<String> getProductUrls(Response response) {
-        List<Map<String, Object>> allProducts = response.jsonPath().getList("response.products");
-        List<String> productUrls = new ArrayList<>();
-
-        for (Map<String, Object> product : allProducts) {
-            String productUrl = (String) product.get("productUrl");
-            if (productUrl != null && !productUrl.trim().isEmpty()) {
-                productUrls.add(productUrl.trim());
+    public static List<String> getProductUrls(Response response, int limit) {
+        List<String> urls = new ArrayList<>();
+        try {
+            JsonPath jsonPath = response.jsonPath();
+            List<Map<String, Object>> products = jsonPath.getList("response.products");
+            
+            if (products != null) {
+                int count = Math.min(products.size(), limit);
+                for (int i = 0; i < count; i++) {
+                    String productUrl = jsonPath.getString("response.products[" + i + "].productUrl");
+                    if (productUrl != null && !productUrl.isEmpty()) {
+                        urls.add(productUrl);
+                    }
+                }
             }
+        } catch (Exception e) {
+            // Return empty list if any error occurs
         }
-        return productUrls;
+        return urls;
     }
 
     public static int getTotalProductCount(Response response) {
@@ -218,6 +227,69 @@ public static String getPopularProductTitle(Response response, int index) {
             throw new RuntimeException("❌ Product SKU is empty");
         }
         return sku;
+    }
+    
+    public static String getDidYouMeanSuggestion(Response response) {
+        try {
+            List<Map<String, Object>> didYouMeanList = response.jsonPath().getList("didYouMean");
+            
+            if (didYouMeanList != null && !didYouMeanList.isEmpty()) {
+                Map<String, Object> firstSuggestion = didYouMeanList.get(0);
+                String suggestion = (String) firstSuggestion.get("suggestion");
+                
+                if (suggestion != null && !suggestion.trim().isEmpty()) {
+                    return suggestion.trim();
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    public static String getDidYouMeanSuggestionWithFrequency(Response response) {
+        try {
+            List<Map<String, Object>> didYouMeanList = response.jsonPath().getList("didYouMean");
+            
+            if (didYouMeanList != null && !didYouMeanList.isEmpty()) {
+                Map<String, Object> firstSuggestion = didYouMeanList.get(0);
+                String suggestion = (String) firstSuggestion.get("suggestion");
+                String frequency = (String) firstSuggestion.get("frequency");
+                
+                if (suggestion != null && !suggestion.trim().isEmpty()) {
+                    return suggestion.trim() + "|" + (frequency != null ? frequency : "0");
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    public static String getFallbackQuery(Response response) {
+        try {
+            String fallbackQuery = response.jsonPath().getString("searchMetaData.fallback.q");
+            
+            if (fallbackQuery != null && !fallbackQuery.trim().isEmpty()) {
+                return fallbackQuery.trim();
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    public static String getFallbackReason(Response response) {
+        try {
+            String fallbackReason = response.jsonPath().getString("searchMetaData.fallback.reason.msg");
+            
+            if (fallbackReason != null && !fallbackReason.trim().isEmpty()) {
+                return fallbackReason.trim();
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
 

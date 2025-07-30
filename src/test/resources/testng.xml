@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 
-<suite name="Unbxd E-commerce Test Suite" parallel="classes" thread-count="3" verbose="1">
+<suite name="Unbxd E-commerce Test Suite" parallel="classes" thread-count="1" verbose="1">
     
     <test name="Site Tests">
-        <parameter name="testkey" value="unique-vintage"/>
+        <parameter name="testkey" value="truworths"/>
         <classes>
             <class name="SearchResultPage.SkuSearchValidation"/>
             <class name="SearchResultPage.SearchResultPageValidation"/>

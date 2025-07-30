@@ -13,11 +13,11 @@ import utils.TestData;
 public class SearchResultPageValidation extends BaseTest {
 
     @Test
- //  @Parameters("testkey")
-    public void totalProductCount()
+   @Parameters("testkey")
+    public void totalProductCount(String testkey)
     {
-        logInfo("[COUNT-VALIDATION] Starting Product Count Validation Test for: " + "kpnfresh");
-        TestData testData = new TestData("data.xlsx", "kpnfresh");
+        logInfo("[COUNT-VALIDATION] Starting Product Count Validation Test for: " + testkey);
+        TestData testData = new TestData("data.xlsx", testkey);
         
         String siteUrl = testData.getSiteUrl();
         String query = testData.getQuery();

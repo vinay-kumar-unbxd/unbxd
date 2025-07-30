@@ -1,11 +1,8 @@
 package utils;
-
-import io.restassured.response.Response;
 import org.openqa.selenium.WebDriver;
 import pages.BasePage;
-
 import java.util.List;
-import java.util.Random;
+
 
 public class ValidationUtils {
     

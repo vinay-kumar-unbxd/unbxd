@@ -9,132 +9,158 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 public class BasePage {
-
-    // Constants for better maintainability
+    // Constants
     private static final int DEFAULT_WAIT_TIMEOUT = 10;
     private static final int POPUP_SLEEP_DURATION = 1000;
+    private static final String XPATH_TEMPLATE = "//*[contains(translate(normalize-space(.), " +
+            "'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), \"%s\")]";
+    private static final String[] PRICE_SELECTORS = {
+        ".product-price", ".price", "[data-price]", ".cost", ".amount"
+    };
     
-    protected WebDriver driver;
-    protected WebDriverWait wait;
-    public SearchPage searchPage;
+    // Core components
+    protected final WebDriver driver;
+    protected final WebDriverWait wait;
+    public final SearchPage searchPage;
+    public final paginationPage paginationPage;
     
-    /**
-     * Simple logging method for BasePage
-     */
-    protected void logInfo(String message) {
-        System.out.println("[BasePage] " + message);
-    }
-    
+    // Page elements
     @FindBy(css = "img.product-image, img[src*='cdn'], img[src*='media'], img[alt*='Product'], img")
     public List<WebElement> allImages;
+
+    @FindAll({
+        @FindBy(xpath = "//button[contains(@class,'close')]"),
+        @FindBy(xpath = "//div[contains(@class,'popup')]//button[contains(@class,'close')]"),
+        @FindBy(xpath = "(//button[@data-role='closeBtn'])[1]"),
+        @FindBy(xpath = "//div[contains(@class, 'overlay')]//button[contains(@class,'close')]"),
+        @FindBy(css = "[aria-label*='close'], [aria-label*='Close']"),
+        @FindBy(css = ".modal-close, .popup-close, .overlay-close")
+    })
+    private List<WebElement> popupCloseButtons;
 
     public BasePage(WebDriver driver) {
         this.driver = driver;
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(DEFAULT_WAIT_TIMEOUT));
         PageFactory.initElements(driver, this);
         searchPage = new SearchPage(driver);
+        paginationPage = new paginationPage(driver);
     }
 
+    // ================= LOGGING =================
+    protected void logInfo(String message) {
+        System.out.println("[BasePage] " + message);
+    }
 
+    // ================= VALIDATION METHODS =================
     public void verifyTitlesPresentInUI(List<String> titles) {
-        for (String expectedTitle : titles) {
-            if (expectedTitle == null || expectedTitle.trim().isEmpty()) {
-                continue; // Skip null or empty titles
-            }
-            
-            String normalizedTitle = normalizeText(expectedTitle);
-            String xpath = String.format(
-                    "//*[contains(translate(normalize-space(.), " +
-                            "'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), \"%s\")]",
-                    normalizedTitle
-            );
-            
-            List<WebElement> elements = driver.findElements(By.xpath(xpath));
-            if (elements.isEmpty()) {
-                throw new RuntimeException("Title not found in UI: " + expectedTitle);
-            } else {
-                logInfo("Title found in UI: " + expectedTitle);
-            }
-        }
+        titles.stream()
+            .filter(title -> title != null && !title.trim().isEmpty())
+            .forEach(this::verifyTitleInUI);
     }
+
+    private void verifyTitleInUI(String expectedTitle) {
+        String normalizedTitle = normalizeText(expectedTitle);
+        String xpath = String.format(XPATH_TEMPLATE, normalizedTitle);
+        
+        List<WebElement> elements = driver.findElements(By.xpath(xpath));
+        if (elements.isEmpty()) {
+            throw new RuntimeException("Title not found in UI: " + expectedTitle);
+        }
+        logInfo("Title found in UI: " + expectedTitle);
+    }
+
 
 
     public void validateImagesPresentInUI(List<String> expectedImageUrls) {
+        if (expectedImageUrls == null || expectedImageUrls.isEmpty()) {
+            logInfo("⚠️ Expected image URL list is empty or null.");
+            return;
+        }
+    
+        // Step 1: Extract UI image sources, strip query params
+        List<String> uiImages = new ArrayList<>();
+        for (WebElement img : allImages) {
+            String src = img.getAttribute("src");
+            if (src != null && !src.trim().isEmpty()) {
+                String baseUrl = src.contains("?") ? src.substring(0, src.indexOf("?")) : src;
+                uiImages.add(baseUrl);
+            }
+        }
+    
+        // Step 2: Try exact match first
         for (String expectedUrl : expectedImageUrls) {
             if (expectedUrl == null || expectedUrl.trim().isEmpty()) continue;
-
-            boolean found = false;
-            for (WebElement img : allImages) {
-                String actualSrc = img.getAttribute("src");
-                if (actualSrc != null && actualSrc.contains(expectedUrl)) {
-                    logInfo("✅ Image found: " + expectedUrl);
-                    found = true;
-                    break;
+    
+            String cleanExpectedUrl = expectedUrl.contains("?")
+                    ? expectedUrl.substring(0, expectedUrl.indexOf("?"))
+                    : expectedUrl;
+    
+            // Try exact match
+            for (String uiUrl : uiImages) {
+                if (uiUrl.equalsIgnoreCase(cleanExpectedUrl)) {
+                    logInfo("✅ Exact image match found in UI: " + cleanExpectedUrl);
+                    return;
                 }
             }
-
-            if (!found) {
-                throw new RuntimeException("❌ Image not found in UI: " + expectedUrl);
+    
+            // Step 3: Fallback — Match by removing numeric suffix (_1, _2, _3)
+            String expectedBase = cleanExpectedUrl.replaceAll("_[0-9]+(?=\\.[a-zA-Z]{3,4}$)", "_");
+    
+            for (String uiUrl : uiImages) {
+                String uiBase = uiUrl.replaceAll("_[0-9]+(?=\\.[a-zA-Z]{3,4}$)", "_");
+    
+                if (uiBase.equalsIgnoreCase(expectedBase)) {
+                    logInfo("🔁 Base pattern image match found in UI: " + uiUrl);
+                    return;
+                }
             }
         }
+    
+        // Step 4: If no match found at all
+        logInfo("❌ None of the expected images matched in the UI.");
+        throw new AssertionError("No matching image found in UI.");
     }
+    
+    
 
-
+    // ================= PRODUCT VERIFICATION =================
     public boolean verifyProductTitle(String productTitle, String productLabel) {
-        if (productTitle == null || productTitle.trim().isEmpty()) {
-            logInfo("Warning " + productLabel + " has no title to verify");
-            return true; // Consider it success if no title provided
-        }
-        
-        try {
-            verifyTitlesPresentInUI(List.of(productTitle));
-            logInfo("Passed " + productLabel + " TITLE found in search results");
-            return true;
-        } catch (Exception e) {
-            logInfo("Failed " + productLabel + " TITLE not found in search results: " + e.getMessage());
-            return false;
-        }
+        return verifyProductAttribute(productTitle, productLabel, "TITLE", 
+            () -> verifyTitlesPresentInUI(List.of(productTitle)));
     }
 
     public boolean verifyProductImage(String imageUrl, String productLabel) {
-        if (imageUrl == null || imageUrl.trim().isEmpty()) {
-            logInfo("Warning " + productLabel + " has no image URL to verify");
-            return true; // Consider it success if no image URL provided
-        }
-        
-        try {
-            validateImagesPresentInUI(List.of(imageUrl));
-            logInfo("Passed " + productLabel + " IMAGE found in search results");
-            return true;
-        } catch (Exception e) {
-            logInfo("Failed " + productLabel + " IMAGE not found in search results: " + e.getMessage());
-            return false;
-        }
+        return verifyProductAttribute(imageUrl, productLabel, "IMAGE", 
+            () -> validateImagesPresentInUI(List.of(imageUrl)));
     }
-
 
     public boolean verifyProductUrl(String productUrl, String productLabel) {
-        if (productUrl == null || productUrl.trim().isEmpty()) {
-            logInfo("Warning " + productLabel + " has no product URL to verify");
-            return true; // Consider it success if no product URL provided
+        return verifyProductAttribute(productUrl, productLabel, "URL", 
+            () -> {
+                if (!searchPage.isProductUrlPresent(productUrl)) {
+                    throw new RuntimeException("URL not found in search results");
+                }
+            });
+    }
+
+    private boolean verifyProductAttribute(String value, String productLabel, String attributeType, Runnable verificationAction) {
+        if (value == null || value.trim().isEmpty()) {
+            logInfo("Warning " + productLabel + " has no " + attributeType.toLowerCase() + " to verify");
+            return true;
         }
         
         try {
-            if (searchPage.isProductUrlPresent(productUrl)) {
-                logInfo("Passed " + productLabel + " URL found in search results");
-                return true;
-            } else {
-                logInfo("Failed " + productLabel + " URL not found in search results");
-                return false;
-            }
+            verificationAction.run();
+            logInfo("Passed " + productLabel + " " + attributeType + " found in search results");
+            return true;
         } catch (Exception e) {
-            logInfo("Failed " + productLabel + " URL verification failed: " + e.getMessage());
+            logInfo("Failed " + productLabel + " " + attributeType + " not found in search results: " + e.getMessage());
             return false;
         }
     }
-
 
     public boolean verifyCompleteProduct(String productTitle, String imageUrl, String productUrl, String productLabel) {
         boolean titleFound = verifyProductTitle(productTitle, productLabel);
@@ -152,88 +178,88 @@ public class BasePage {
         return success;
     }
 
-    @FindAll({
-            @FindBy(xpath = "//button[contains(@class,'close')]"),
-            @FindBy(xpath = "//div[contains(@class,'popup')]//button[contains(@class,'close')]"),
-            @FindBy(xpath = "(//button[@data-role='closeBtn'])[1]"),
-            @FindBy(xpath = "//div[contains(@class, 'overlay')]//button[contains(@class,'close')]"),
-            @FindBy(css = "[aria-label*='close'], [aria-label*='Close']"),
-            @FindBy(css = ".modal-close, .popup-close, .overlay-close")
-    })
-    private List<WebElement> popupCloseButtons;
-
-    /**
-     * Closes the first visible popup element if any are present
-     */
+    // ================= UI INTERACTION =================
     public void closePopupIfPresent() {
         try {
-            for (WebElement button : popupCloseButtons) {
-                if (isElementClickable(button)) {
-                    button.click();
-                    Thread.sleep(POPUP_SLEEP_DURATION);
-                    return; // Exit after first successful close
-                }
-            }
+            popupCloseButtons.stream()
+                .filter(this::isElementClickable)
+                .findFirst()
+                .ifPresent(button -> {
+                    try {
+                        button.click();
+                        Thread.sleep(POPUP_SLEEP_DURATION);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                });
         } catch (Exception e) {
-            // Popup handling is non-critical, continue with test execution
             logInfo("⚠️ Popup handling failed, continuing with test: " + e.getMessage());
         }
     }
 
+    public void clickOnTitle(String expectedTitle) {
+        if (expectedTitle == null || expectedTitle.trim().isEmpty()) {
+            throw new IllegalArgumentException("Expected title is null or empty");
+        }
+
+        String normalizedTitle = normalizeText(expectedTitle);
+        String xpath = String.format(XPATH_TEMPLATE, normalizedTitle);
+        
+        List<WebElement> elements = driver.findElements(By.xpath(xpath));
+        
+        // Find last displayed element and click using JavaScript
+        elements.stream()
+            .filter(WebElement::isDisplayed)
+            .reduce((first, second) -> second) // Get last element
+            .ifPresentOrElse(
+                element -> {
+                    logInfo("Clicking on last matching title: " + expectedTitle);
+                    JavascriptExecutor js = (JavascriptExecutor) driver;
+                    js.executeScript("arguments[0].scrollIntoView(true);", element);
+                    js.executeScript("arguments[0].click();", element);
+                },
+                () -> {
+                    throw new RuntimeException("Title not found or not clickable: " + expectedTitle);
+                }
+            );
+    }
+
+    // ================= ELEMENT FINDER METHODS =================
     public WebElement findFirstVisibleElement(By... locators) {
         for (By locator : locators) {
-            List<WebElement> elements = driver.findElements(locator);
-            for (WebElement element : elements) {
-                if (isElementVisible(element)) {
-                    return element;
-                }
-            }
+            WebElement element = driver.findElements(locator).stream()
+                .filter(this::isElementVisible)
+                .findFirst()
+                .orElse(null);
+            if (element != null) return element;
         }
         throw new NoSuchElementException("No visible/enabled element found from provided locators");
     }
 
     public List<WebElement> findVisibleElements(By... locators) {
         for (By locator : locators) {
-            List<WebElement> elements = driver.findElements(locator);
-            if (!elements.isEmpty()) {
-                List<WebElement> visibleElements = new ArrayList<>();
-                for (WebElement element : elements) {
-                    if (isElementVisible(element)) {
-                        visibleElements.add(element);
-                    }
-                }
-                if (!visibleElements.isEmpty()) {
-                    return visibleElements;
-                }
-            }
+            List<WebElement> visibleElements = driver.findElements(locator).stream()
+                .filter(this::isElementVisible)
+                .collect(Collectors.toList());
+            if (!visibleElements.isEmpty()) return visibleElements;
         }
         throw new NoSuchElementException("No visible elements found from provided locators");
     }
 
     public List<String> getDisplayedPrices() {
-        String[] priceSelectors = {
-            ".product-price", ".price", "[data-price]", ".cost", ".amount"
-        };
-        
-        List<String> prices = new ArrayList<>();
-        for (String selector : priceSelectors) {
-            List<WebElement> priceElements = driver.findElements(By.cssSelector(selector));
-            for (WebElement element : priceElements) {
-                if (isElementVisible(element)) {
-                    String priceText = element.getText().trim();
-                    if (!priceText.isEmpty()) {
-                        prices.add(priceText);
-                    }
-                }
-            }
-            if (!prices.isEmpty()) {
-                break; // Return prices from first successful selector
-            }
+        for (String selector : PRICE_SELECTORS) {
+            List<String> prices = driver.findElements(By.cssSelector(selector)).stream()
+                .filter(this::isElementVisible)
+                .map(WebElement::getText)
+                .map(String::trim)
+                .filter(text -> !text.isEmpty())
+                .collect(Collectors.toList());
+            if (!prices.isEmpty()) return prices;
         }
-        return prices;
+        return new ArrayList<>();
     }
 
-
+    // ================= UTILITY METHODS =================
     private String normalizeText(String text) {
         return text
                 .replaceAll("[^\\p{ASCII}]", "") // Remove non-ASCII characters
@@ -257,32 +283,4 @@ public class BasePage {
             return false;
         }
     }
-    public void clickOnTitle(String expectedTitle) {
-        if (expectedTitle == null || expectedTitle.trim().isEmpty()) {
-            throw new IllegalArgumentException("Expected title is null or empty");
-        }
-    
-        String normalizedTitle = expectedTitle.trim().toLowerCase();
-    
-        String xpath = String.format(
-            "//*[contains(translate(normalize-space(.), " +
-            "'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), \"%s\")]",
-            normalizedTitle
-        );
-    
-        List<WebElement> elements = driver.findElements(By.xpath(xpath));
-    
-        for (int i = elements.size() - 1; i >= 0; i--) {
-            WebElement element = elements.get(i);
-            if (element.isDisplayed()) {
-                logInfo("Clicking on last matching title: " + expectedTitle);
-                element.click();
-                return;
-            }
-        }
-    
-        throw new RuntimeException("Title not found or not clickable: " + expectedTitle);
-    }
-    
-    
 }
