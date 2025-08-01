@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<suite name="ValidationSearchResultsTestSuite" parallel="methods" thread-count="3">
+    <test name="ValidationSearchResultsTests">
+        <classes>
+            <parameter name="vertical" value="Electronics"/>
+            <parameter name="testkey" value="mwave"/>
+            <class name="SearchResultPage.ValidationSearchResultWIthDifferentQuery">
+                <methods>
+                    <include name="twoWordsQuery"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite> 

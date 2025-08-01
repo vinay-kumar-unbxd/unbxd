@@ -8,20 +8,30 @@ import org.testng.annotations.Test;
 import pages.BasePage;
 import utils.ScreenshotUtil;
 import utils.TestData;
+
 import java.util.List;
 
 public class NoResultMessageTest extends BaseTest {
 
-    private static final String SEARCH_QUERY = "hdiuehiduhdeudh";
+    private static final String SEARCH_QUERY = "edjedeuddiedheu";
     private static final int WAIT_TIME = 3000;
     
     // Optimized selectors - using arrays for better maintainability
     private static final String[] NO_RESULT_XPATH_SELECTORS = {
         "//*[contains(text(), 'Sorry')]",
-        "//*[contains(text(), 'No results')]",
+        "//*[contains(text(), 'No result')]",
+        "//*[contains(text(), 'No Result')]",
         "//*[contains(text(), 'No products')]",
         "//*[contains(text(), 'No search results')]",
-        "//*[contains(text(), 'No matches found')]"
+        "//*[contains(text(), 'No matches found')]",
+        "//*[contains(text(), 'No items')]",
+        "//*[contains(text(), 'We couldn')]",
+        "//*[contains(text(), 'Try again')]",
+        "//*[contains(text(), 'No matches')]",
+        "//*[contains(text(), '0 results')]",
+        "//*[contains(text(), 'No items')]",
+        "//*[contains(text(), 'Sorry,')]",
+        "//*[contains(text(), 'Oops')]"
     };
     
     private static final String[] NO_RESULT_CSS_SELECTORS = {
@@ -45,7 +55,7 @@ public class NoResultMessageTest extends BaseTest {
     @Test
     public void TC_119_validateNoResultMessage() throws InterruptedException {
         // Setup
-        TestData searchData = new TestData("data.xlsx", "mwave");
+        TestData searchData = new TestData("data.xlsx", "kpnfresh");
         driver.get(searchData.getSiteUrl());
         BasePage basePage = new BasePage(driver);
         

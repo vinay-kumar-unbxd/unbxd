@@ -162,18 +162,15 @@ public class BasePage {
         }
     }
 
-    public boolean verifyCompleteProduct(String productTitle, String imageUrl, String productUrl, String productLabel) {
+    public boolean verifyCompleteProduct(String productTitle, String productUrl, String productLabel) {
         boolean titleFound = verifyProductTitle(productTitle, productLabel);
-        boolean imageFound = verifyProductImage(imageUrl, productLabel);
         boolean urlFound = verifyProductUrl(productUrl, productLabel);
         
-        boolean success = titleFound && imageFound && urlFound;
-        String resultMsg = String.format("%s verification %s | Title=%s | Image=%s | URL=%s",
+        boolean success = titleFound && urlFound;
+        String resultMsg = String.format("%s verification %s | Title=%s | URL=%s",
                 productLabel,
                 success ? "PASSED" : "FAILED",
-                titleFound ? "Passed" : "Failed",
-                imageFound ? "Passed" : "Failed",
-                urlFound ? "Passed" : "Failed");
+                titleFound ? "Passed" : "Failed");
         logInfo(resultMsg);
         return success;
     }

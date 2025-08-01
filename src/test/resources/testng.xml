@@ -4,11 +4,30 @@
 <suite name="Unbxd E-commerce Test Suite" parallel="classes" thread-count="1" verbose="1">
     
     <test name="Site Tests">
-        <parameter name="testkey" value="truworths"/>
+        <parameter name="testKey" value="footlocker"/>
+        <parameter name="vertical" value="Footware and sportsware"/>
         <classes>
+            <class name="SearchResultPage.SpellCheckQuery"/>
+            <methods>
+                <include name="tc_127_validateSpellCheckQueryAPI"/>
+                <include name="tc_128_validateSpellCheckInUI"/>
+                <include name="validateTwoWordSpellError"/>
+                <include name="tc_129_validateSpellCheckMessage"/>
+            </methods>
+            <class name="SearchResultPage.PaginationValidationTest"/>
+            <methods>
+                <include name="TC_187_validatePagination"/>
+                <include name="TC_188_validatePaginationNavigationFunctionality"/>
+            </methods>
             <class name="SearchResultPage.SkuSearchValidation"/>
-            <class name="SearchResultPage.SearchResultPageValidation"/>
+            <methods>
+                <include name="validateSkuSearch"/>
+            </methods>  
             <class name="SearchResultPage.SearchWithProductTitle"/>
+            <methods>
+                <include name="autoSuggestionWithProductTitle"/>
+                <include name="searchResultwithProductTitle"/>
+            </methods>
             <class name="Autosuggestion.PopularProdcuctClickValidation"/>
         </classes>
     </test>

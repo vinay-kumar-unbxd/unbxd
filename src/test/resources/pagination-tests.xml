@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<suite name="PaginationTestSuite" parallel="methods" thread-count="3">
+    <test name="PaginationValidationTests">
+        <classes>
+        <parameter name="vertical" value="Electronics"/>
+        <parameter name="testKey" value="mwave"/>
+            <class name="SearchResultPage.PaginationValidationTest">
+                <methods>
+                    <include name="TC_187_validatePagination"/>
+                    <include name="TC_188_validatePaginationNavigationFunctionality"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+    

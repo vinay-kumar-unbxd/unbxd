@@ -13,8 +13,8 @@ import utils.TestData;
 public class SearchResultPageValidation extends BaseTest {
 
     @Test
-   @Parameters("testkey")
-    public void totalProductCount(String testkey)
+   @Parameters({"testkey", "vertical"})
+    public void totalProductCount(String testkey, String vertical)
     {
         logInfo("[COUNT-VALIDATION] Starting Product Count Validation Test for: " + testkey);
         TestData testData = new TestData("data.xlsx", testkey);

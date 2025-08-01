@@ -1,25 +1,26 @@
 package SearchResultPage;
 
 import Base.BaseTest;
-import org.openqa.selenium.By;
 import org.testng.Assert;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 import pages.BasePage;
 import utils.ScreenshotUtil;
 import utils.TestData;
-import java.util.List;
-import org.openqa.selenium.WebElement;
+
 
 public class PaginationValidationTest extends BaseTest {
 
     @Test
-    public void TC_187_validatePaginationFunctionality() throws InterruptedException {
-        TestData searchData = new TestData("data.xlsx", "mwave");
-        driver.get(searchData.getSiteUrl());
+    @Parameters({"vertical", "testKey"})
+    public void TC_187_validatePagination(String vertical, String testKey) throws InterruptedException {
+        TestData searchData = TestData.forSearchQueries(vertical);
+        TestData configData = new TestData("data.xlsx", testKey);
+        driver.get(configData.getSiteUrl());
         BasePage basePage = new BasePage(driver);
-        
+
         // Step 1: Enter search query
-        String searchQuery = "mouse";
+        String searchQuery = searchData.getSingleWordQuery();
         logInfo("Entering search query: " + searchQuery);
         basePage.searchPage.enterInSearchBox(searchQuery);
         basePage.searchPage.pressEnterInSearchBox();
@@ -35,14 +36,16 @@ public class PaginationValidationTest extends BaseTest {
         logPass("Pagination is present on the page");
     }
 
-    @Test //(dependsOnMethods = "TC_187_validatePaginationFunctionality")
-    public void TC_188_validatePaginationNavigation() throws InterruptedException {
-        TestData searchData = new TestData("data.xlsx", "mwave");
-        driver.get(searchData.getSiteUrl());
+    @Test 
+    @Parameters({"vertical", "testKey"})
+    public void TC_188_validatePaginationNavigationFunctionality(String vertical, String testKey) throws InterruptedException {
+        TestData searchData = TestData.forSearchQueries(vertical);
+        TestData configData = new TestData("data.xlsx", testKey);
+        driver.get(configData.getSiteUrl());
         BasePage basePage = new BasePage(driver);
-        
+
         // Step 1: Enter search query that will return multiple pages
-        String searchQuery = "mouse";
+        String searchQuery = searchData.getSingleWordQuery();
         logInfo("Entering search query: " + searchQuery);
         basePage.searchPage.enterInSearchBox(searchQuery);
         basePage.searchPage.pressEnterInSearchBox();

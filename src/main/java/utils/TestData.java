@@ -76,6 +76,10 @@ public class TestData {
         return searchData != null ? searchData.get("spell check") : null;
     }
     
+    public String getTwoWordSpellCheck() {
+        return searchData != null ? searchData.get("two word spell check") : null;
+    }
+    
 
     public String getVertical() {
         return searchData != null ? searchData.get("verticals") : null;

@@ -18,12 +18,12 @@ import java.util.Random;
 public class SkuSearchValidation extends BaseTest {
 
     @Test
-    //@Parameters("testkey")
-    public void validateSkuSearch() throws InterruptedException {
+    @Parameters({"testkey", "vertical"})
+    public void validateSkuSearch(String testkey, String vertical) throws InterruptedException {
         logInfo("🔍 [SKU-VALIDATION] Starting SKU Search Validation Test");
         
         // Initialize test data and get API response
-        TestData testData = new TestData("data.xlsx", "truworths");
+        TestData testData = new TestData("data.xlsx", testkey);
         Response response = API_Utils.getAndValidateApiResponse(testData.getSearchApiUrl(), createLogger());
         
         // Extract product data

@@ -24,8 +24,8 @@ public class SearchPage {
     private WebElement searchBox;
 
     @FindAll({
-        @FindBy(css = "button[type='submit'], .search-button, .search-icon, button.search, [class*='search-submit']"),
-        @FindBy(xpath = "//button[contains(@class,'search')] | //button[@type='submit'] | //*[contains(@class,'search-icon')] | //a[contains(@href,'SearchFormSubmit')]")
+        @FindBy(css = ".search-button, .search-icon, button.search, [class*='search-submit']"),
+        @FindBy(xpath = "//button[@*='search-button'] | //button[contains(@class,'search')] | //button[@type='submit'] | //*[contains(@class,'search-icon')] | //a[contains(@href,'SearchFormSubmit')]")
     })
     private WebElement searchIcon;
 
@@ -175,11 +175,48 @@ public class SearchPage {
     }
 
     public void pressEnterInSearchBox() {
-        searchBox.sendKeys(Keys.ENTER);
         try {
-            Thread.sleep(2000); // Wait for search results
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            searchBox.sendKeys(Keys.ENTER);
+        } catch (Exception e) {
+            ((JavascriptExecutor) driver).executeScript("arguments[0].value = arguments[0].value + '\\n';", searchBox);
         }
+    }
+    
+    // Common method to get search box attribute value
+    public String getSearchBoxAttribute(String attributeName) {
+        try {
+            return searchBox.getAttribute(attributeName);
+        } catch (Exception e) {
+            // logInfo("Error getting search box attribute '" + attributeName + "': " + e.getMessage()); // Assuming logInfo is defined elsewhere
+            return null;
+        }
+    }
+    
+    // Common method to get search box value
+    public String getSearchBoxValue() {
+        return getSearchBoxAttribute("value");
+    }
+    
+    // Common method to get search box placeholder
+    public String getSearchBoxPlaceholder() {
+        return getSearchBoxAttribute("placeholder");
+    }
+    
+    // Common method to get search box type
+    public String getSearchBoxType() {
+        return getSearchBoxAttribute("type");
+    }
+    
+    // Common method to validate search box value
+    public boolean validateSearchBoxValue(String expectedValue) {
+        String actualValue = getSearchBoxValue();
+        return actualValue != null && actualValue.equals(expectedValue);
+    }
+    
+    // Common method to get search box text with logging
+    public String getSearchBoxValueWithLog(String testName) {
+        String value = getSearchBoxValue();
+        // logInfo("[" + testName + "] Search box value: " + value); // Assuming logInfo is defined elsewhere
+        return value;
     }
 }
