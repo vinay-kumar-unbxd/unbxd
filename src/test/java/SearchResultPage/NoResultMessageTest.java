@@ -139,11 +139,9 @@ public class NoResultMessageTest extends BaseTest {
         
         // Check CSS selectors
         if (checkCssSelectors()) return true;
-        
-        // Check if no products exist
+    
         if (checkNoProducts()) return true;
         
-        // Check page source for phrases
         return checkPageSourcePhrases();
     }
     
