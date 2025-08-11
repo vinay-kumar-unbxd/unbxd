@@ -69,7 +69,7 @@ public class BasePage {
         if (elements.isEmpty()) {
             throw new RuntimeException("Title not found in UI: " + expectedTitle);
         }
-        logInfo("Title found in UI: " + expectedTitle);
+        logInfo("✅ Title found in UI: " + expectedTitle);
     }
 
 
@@ -259,7 +259,7 @@ public class BasePage {
     // ================= UTILITY METHODS =================
     private String normalizeText(String text) {
         return text
-                .replaceAll("[^\\p{ASCII}]", "") // Remove non-ASCII characters
+                .replaceAll("[^\\p{ASCII}\"]", "") // Remove non-ASCII characters but preserve quotes
                 .replaceAll("\\s+", " ")         // Normalize whitespace
                 .trim()
                 .toLowerCase();

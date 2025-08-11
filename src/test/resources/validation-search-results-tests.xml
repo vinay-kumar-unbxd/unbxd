@@ -2,9 +2,9 @@
 
 <suite name="ValidationSearchResultsTestSuite" parallel="methods" thread-count="3">
     <test name="ValidationSearchResultsTests">
+        <parameter name="vertical" value="Electronics"/>
+        <parameter name="testKey" value="mwave"/>
         <classes>
-            <parameter name="vertical" value="Electronics"/>
-            <parameter name="testkey" value="mwave"/>
             <class name="SearchResultPage.ValidationSearchResultWIthDifferentQuery">
                 <methods>
                     <include name="twoWordsQuery"/>

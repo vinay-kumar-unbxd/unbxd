@@ -49,13 +49,12 @@ public class ValidationUtils {
             logger.logInfo("No title provided, skipping title validation.");
             return true;
         }
-
         try {
             basePage.verifyTitlesPresentInUI(List.of(title));
-            logger.logPass("✅ Product title found in search results UI");
+            logger.logPass("✅ Product title found in search results UI: " + title);
             return true;
         } catch (Exception e) {
-            logger.logFail("❌ Product title NOT found in search results UI: " + e.getMessage());
+            logger.logFail("❌ Product title NOT found in search results UI: " + title);
             return false;
         }
     }

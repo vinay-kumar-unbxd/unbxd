@@ -18,7 +18,12 @@ public class SearchPage {
     }
 
     @FindAll({
-        @FindBy(css = "input[type='search'], input[name='w'], input[name='q'], input[placeholder*='Search'], input[placeholder*='looking for']"),
+        @FindBy(css = "input[type='search']"),
+        @FindBy(css = "input[name='w']"),
+        @FindBy(css = "input[name='q']"),
+        @FindBy(css = "input[placeholder*='Search']"),
+        @FindBy(css = "input[placeholder*='looking for']"),
+        @FindBy(css = "input[placeholder*='SEARCH']"),
         @FindBy(xpath = "//input[@id='sli_search_1'] | //input[@type='search']")
     })
     private WebElement searchBox;
@@ -218,5 +223,107 @@ public class SearchPage {
         String value = getSearchBoxValue();
         // logInfo("[" + testName + "] Search box value: " + value); // Assuming logInfo is defined elsewhere
         return value;
+    }
+    
+    // Method to get search result message from UI
+    public String getSearchResultMessage() {
+        // CSS selectors for search result message elements
+        String[] messageSelectors = {
+            ".search-results-count",
+            ".product-count",
+            ".results-count",
+            ".search-summary",
+            ".search-results-summary",
+            "[data-testid='search-results-count']",
+            "[data-cy='search-results-count']",
+            ".search-results-message",
+            ".results-message",
+            ".search-summary-text",
+            ".product-results-count",
+            ".search-results-info",
+            ".results-info",
+            ".search-results-header",
+            ".search-results-title",
+            ".search-results-description",
+            ".search-results-text"
+        };
+        
+        // Try CSS selectors first
+        for (String selector : messageSelectors) {
+            try {
+                List<WebElement> elements = driver.findElements(By.cssSelector(selector));
+                for (WebElement element : elements) {
+                    if (element.isDisplayed()) {
+                        String text = element.getText();
+                        if (text != null && !text.trim().isEmpty()) {
+                            return text.trim();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Continue to next selector
+            }
+        }
+        
+        // XPath selectors for search result message elements
+        String[] messageXPathSelectors = {
+            "//*[contains(text(), 'results') and contains(text(), 'found')]",
+            "//*[contains(text(), 'products') and contains(text(), 'found')]",
+            "//*[contains(text(), 'items') and contains(text(), 'found')]",
+            "//*[contains(text(), 'Showing') and contains(text(), 'results')]",
+            "//*[contains(text(), 'Showing') and contains(text(), 'products')]",
+            "//*[contains(text(), 'Showing') and contains(text(), 'items')]",
+            "//*[contains(text(), 'of') and contains(text(), 'results')]",
+            "//*[contains(text(), 'of') and contains(text(), 'products')]",
+            "//*[contains(text(), 'of') and contains(text(), 'items')]",
+            "//*[contains(text(), 'search'result)]",
+            "//*[contains(text(), 'Search results')]",
+            "//*[contains(text(), 'results for')]"
+        };
+        
+        // Try XPath selectors
+        for (String xpath : messageXPathSelectors) {
+            try {
+                List<WebElement> elements = driver.findElements(By.xpath(xpath));
+                for (WebElement element : elements) {
+                    if (element.isDisplayed()) {
+                        String text = element.getText();
+                        if (text != null && !text.trim().isEmpty()) {
+                            return text.trim();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Continue to next selector
+            }
+        }
+        
+        // Try to find any element containing result-related text
+        String[] resultKeywords = {"results", "products", "items", "found", "showing"};
+        for (String keyword : resultKeywords) {
+            try {
+                String xpath = "//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '" + keyword + "')]";
+                List<WebElement> elements = driver.findElements(By.xpath(xpath));
+                for (WebElement element : elements) {
+                    if (element.isDisplayed()) {
+                        String text = element.getText();
+                        if (text != null && !text.trim().isEmpty() && containsResultInfo(text)) {
+                            return text.trim();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Continue to next keyword
+            }
+        }
+        
+        return null;
+    }
+    
+    private boolean containsResultInfo(String text) {
+        String lowerText = text.toLowerCase();
+        return lowerText.contains("result") || lowerText.contains("product") || 
+               lowerText.contains("item") || lowerText.contains("found") || 
+               lowerText.contains("showing") || lowerText.contains("of");
     }
 }

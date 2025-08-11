@@ -19,6 +19,18 @@ public class API_Utils {
         return response;
     }
 
+    public static Response getSearchResultResponse(String apiUrl, ValidationUtils.TestLogger logger) {
+        Response response = RestAssured.get(apiUrl);
+        int statusCode = response.getStatusCode();
+        if (statusCode == 200) {
+            logger.logPass("✅ API Response received successfully with status code: " + statusCode);
+        } else {
+            logger.logFail("❌ API request failed with status code: " + statusCode);
+            throw new AssertionError("Expected status code 200, but got: " + statusCode);
+        }
+        return response;
+    }
+
     public static Response getAndValidateApiResponse(String url, ValidationUtils.TestLogger logger) {
         Response response = RestAssured.get(url);
 
@@ -32,6 +44,8 @@ public class API_Utils {
 
         return response;
     }
+
+    
 
     public static List<String> getSuggestionsTitlesList(Response response, String docType, String path) {
         List<Map<String, Object>> allProducts = response.jsonPath().getList("response.products");

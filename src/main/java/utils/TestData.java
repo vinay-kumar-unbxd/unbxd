@@ -71,6 +71,10 @@ public class TestData {
     public String getTwoWordQuery() {
         return searchData != null ? searchData.get("2 word query") : null;
     }
+
+    public String getMoreThanTwoWordQuery() {
+        return searchData != null ? searchData.get("More than two word query") : null;
+    }
  
     public String getSpellCheckQuery() {
         return searchData != null ? searchData.get("spell check") : null;
